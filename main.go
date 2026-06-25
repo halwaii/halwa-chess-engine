@@ -4,6 +4,17 @@ import (
 	"fmt"
 )
 
+// gloabal constants - A_lane and H_lane
+
+// Column:    H1  G1  F1  E1  D1  C1  B1  A1
+// Bits:      1   1   1   1   1   1   1   0
+// Row:    8   7   6   5   4   3   2   1
+// Hexa:   FE  FE  FE  FE  FE  FE  FE  FE
+
+// FE = 1111 1110
+const notA_lane uint64 = 0xFEFEFEFEFEFEFEFE
+const notH_lane uint64 = 0x7F7F7F7F7F7F7F7F
+
 // make a struct for every piece type and color
 // to store board state
 type board struct{
@@ -23,7 +34,8 @@ type board struct{
 	BlackKnight uint64;
 	BlackRook uint64;
 }
-func Printboard(b board){
+
+func Printboard(b board) {
 	for row:=7; row>=0; row--{
 		fmt.Printf("%v ",row+1)
 		for col:=0; col<8; col++{
@@ -58,7 +70,37 @@ func Printboard(b board){
 		}
 		fmt.Println()
 	}
-	fmt.Printf("  A B C D E F G H\n\n")
+	fmt.Printf("\n  A B C D E F G H\n\n")
+}
+
+func Occupiedsquares(b board) uint64{
+	// we get all occupied spaces as 1
+	// we will do not of this and get empty spaces as 1
+	return b.BlackBishop | b.BlackKing | b.BlackKnight | b.BlackPawns | b.BlackQueen | b.BlackRook |
+			b.WhiteBishop | b.WhiteKing | b.WhiteKnight | b.WhitePawns | b.WhiteQueen | b.WhiteRook 
+}
+
+// move pawn
+func Whitepawnpush(b board,occupied uint64, blackpieces uint64) uint64{
+	// single push
+	Singlepush := (b.WhitePawns << 8) & ^occupied 
+
+	// double push
+	// and row 3 and row 4 should be empty
+	row3mask := uint64(0x000000000000FF0000)
+	Doublepush := ((Singlepush & row3mask)<<8) & ^occupied
+
+	// capture
+	// capture can be left (<< 7) but it should not be on A-lane and it can only capture black piece
+	Leftcapture := ((b.WhitePawns & notA_lane) << 7) & blackpieces
+
+	// capture can be right (<< 9) but it should not be on H-lane and there should be black piece
+	Rightcapture := ((b.WhitePawns & notH_lane) << 9) & blackpieces
+
+	return Singlepush | Doublepush | Leftcapture |Rightcapture
+}
+func blackpieces(b board) uint64{
+	return b.BlackBishop | b.BlackKing | b.BlackKnight | b.BlackPawns | b.BlackQueen | b.BlackRook
 }
 func main(){
 	var b board
@@ -75,6 +117,8 @@ func main(){
 	b.BlackBishop = 0x2400000000000000
 	b.BlackKnight = 0x4200000000000000
 	b.BlackQueen = 0x0800000000000000
+
+	
 	fmt.Println("current board\n")
 	Printboard(b)
 }

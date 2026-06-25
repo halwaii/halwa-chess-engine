@@ -99,6 +99,27 @@ func Whitepawnpush(b board,occupied uint64, blackpieces uint64) uint64{
 
 	return Singlepush | Doublepush | Leftcapture |Rightcapture
 }
+
+func Blackpawnpush(b board, occupied uint64, whitepieces uint64) uint64{
+	// single push
+	Singlepush := (b.BlackPawns >> 8) & ^occupied
+
+	// double push
+	// row 6 and 5 should be empty
+	mask6row := uint64(0x0000FF0000000000)
+	Doublepush := ((Singlepush & mask6row) >> 8) & ^occupied
+
+	// capture
+	// capture can be left (>> 9) and not on A-lane
+	Leftcapture := ((b.BlackPawns & notA_lane) >> 9) & whitepieces
+	// capture can be right (>> 7) and not on H-lane
+	Rightcapture := ((b.BlackPawns & notH_lane) >> 7) & whitepieces
+
+	return Singlepush | Doublepush | Leftcapture | Rightcapture
+}
+func whitepieces(b board) uint64{
+	return b.WhiteBishop | b.WhiteKing | b.WhiteKnight | b.WhitePawns | b.WhiteQueen | b.WhiteRook
+}
 func blackpieces(b board) uint64{
 	return b.BlackBishop | b.BlackKing | b.BlackKnight | b.BlackPawns | b.BlackQueen | b.BlackRook
 }

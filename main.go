@@ -123,6 +123,80 @@ func whitepieces(b board) uint64{
 func blackpieces(b board) uint64{
 	return b.BlackBishop | b.BlackKing | b.BlackKnight | b.BlackPawns | b.BlackQueen | b.BlackRook
 }
+
+// all possible knight moves
+func Knightmoves(square int) uint64{
+	// create moves to store all possible moves of knight
+	var moves uint64 = 0
+	// first find row and column of our knight
+	row := square / 8
+	col := square % 8
+
+	// all 8 - L shaped possible offsets of knight
+	rowOffsets := []int{2,2,1,1,-1,-1,-2,-2}
+	colOffsets := []int{1,-1,2,-2,2,-2,1,-1}
+
+	for i:=0 ; i<8; i++ {
+		// finding rows and columns of possible moves
+		r := row + rowOffsets[i]
+		c := col + colOffsets[i]
+		
+		// edge cases
+		// possible moves should not go beyond
+		if r>=0 && r<8 && c>=0 && c<8 {
+			PossibleSquare := r*8 + c
+			moves |= ((uint64(1) << uint64(PossibleSquare)))
+		}
+	}
+	return moves
+}
+// all Legal white Knight moves
+func LegalWhiteKnightmoves(b board, square int) uint64{
+	rawmoves := Knightmoves(square)
+	// so that white knight cannnot take white pieces
+	return rawmoves & ^whitepieces(b)
+}
+// all Legal Black Knight moves
+func LegalBlackKnightmoves(b board, square int) uint64{
+	rawmoves := Knightmoves(square)
+	// so that black knight cannnot take black pieces
+	return rawmoves & ^blackpieces(b)
+}
+// we will find the square on which our knight is actually standing
+func allLegalWhiteKnightmoves(b board) uint64{
+	var allWhiteKnightmoves uint64 = 0
+	for square := 0 ; square < 64 ; square++ {
+		if (b.WhiteKnight & (uint64(1) << uint64(square))) != 0 {
+			allWhiteKnightmoves |= LegalWhiteKnightmoves(b, square)
+		}
+	}
+	return allWhiteKnightmoves
+}
+func allLegalBlackKnightmoves(b board) uint64{
+	var allBlackKnightmoves uint64 = 0
+	for square := 0 ; square < 64 ; square++ {
+		if (b.BlackKnight & (uint64(1) << uint64(square))) != 0 {
+			allBlackKnightmoves |= LegalBlackKnightmoves(b, square)
+		}
+	}
+	return allBlackKnightmoves
+}
+func PrintBitboard(bitboard uint64) {
+    for row := 7; row >= 0; row-- {
+        fmt.Printf("%v ", row+1)
+        for col := 0; col < 8; col++ {
+            square := row*8 + col
+            // if sqare bit is 1 then print 1
+            if (bitboard & (1 << uint64(square))) != 0 {
+                fmt.Printf("1 ")
+            } else {
+                fmt.Printf(". ")
+            }
+        }
+        fmt.Println()
+    }
+    fmt.Println("  A B C D E F G H\n")
+}
 func main(){
 	var b board
 	b.WhitePawns = 0x000000000000FF00
@@ -139,7 +213,14 @@ func main(){
 	b.BlackKnight = 0x4200000000000000
 	b.BlackQueen = 0x0800000000000000
 
-	
+	whiteknightmoves := allLegalWhiteKnightmoves(b)
+	blackknightmoves := allLegalBlackKnightmoves(b)
 	fmt.Println("current board\n")
 	Printboard(b)
+
+	fmt.Println("White Knight Legal Moves Matrix:")
+	PrintBitboard(whiteknightmoves)
+
+	fmt.Println("Black Knight Legal Moves Matrix:")
+	PrintBitboard(blackknightmoves)
 }

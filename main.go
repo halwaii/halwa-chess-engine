@@ -181,6 +181,67 @@ func allLegalBlackKnightmoves(b board) uint64{
 	}
 	return allBlackKnightmoves
 }
+
+// all possible rook moves
+func Rookmoves(square int, b board) uint64{
+	var moves uint64 = 0
+	// find row and col of current rook
+	row := square / 8
+	col := square % 8
+	// rook can move in EAST WEST NORTH SOUTH directions
+	rowOffsets := []int{1,-1,0,0}
+	colOffsets := []int{0,0,1,-1}
+
+	// ray casting in every direction
+	for i :=0;i<4;i++ {
+		r := row + rowOffsets[i]
+		c := col + colOffsets[i]
+		// going on till end of board
+		for r>=0 && r<8 && c>=0 && c<8 {
+			PossibleSquare := r*8 + c
+			mask := (uint64(1) << uint64(PossibleSquare))
+			moves |= mask
+			// break considtion if a square is occupied
+			if (Occupiedsquares(b) & mask) != 0 {
+				break
+			}
+			// increment/decrement
+			r += rowOffsets[i]
+			c += colOffsets[i]
+		}
+	}
+	return moves
+}
+// all Legal rook moves
+func LegalWhiteRookmoves(b board, square int) uint64{
+	rawmoves := Rookmoves(square, b)
+
+	return rawmoves & ^whitepieces(b)
+}
+func LegalBlackRookmoves(b board, square int) uint64{
+	rawmoves := Rookmoves(square, b)
+
+	return rawmoves & ^blackpieces(b)
+}
+// find squares where white rooks are present
+func allLegalWhiteRookmoves(b board) uint64{
+	var allRookmoves uint64 = 0
+	for square:=0 ; square<64; square++{
+		if (b.WhiteRook & (uint64(1)<<uint64(square))) != 0{
+			allRookmoves |= LegalWhiteRookmoves(b, square)
+		}
+	}
+	return allRookmoves
+}
+func allLegalBlackRookmoves(b board) uint64{
+	var allRookmoves uint64 = 0
+	for square:=0 ; square<64 ; square++ {
+		if (b.BlackRook & (uint64(1) << uint64(square))) != 0{
+			allRookmoves |= LegalBlackRookmoves(b, square)
+		}
+	}
+	return allRookmoves
+}
 func PrintBitboard(bitboard uint64) {
     for row := 7; row >= 0; row-- {
         fmt.Printf("%v ", row+1)
@@ -213,14 +274,18 @@ func main(){
 	b.BlackKnight = 0x4200000000000000
 	b.BlackQueen = 0x0800000000000000
 
-	whiteknightmoves := allLegalWhiteKnightmoves(b)
-	blackknightmoves := allLegalBlackKnightmoves(b)
+	
 	fmt.Println("current board\n")
 	Printboard(b)
 
-	fmt.Println("White Knight Legal Moves Matrix:")
-	PrintBitboard(whiteknightmoves)
+	// rookmoves := allLegalBlackRookmoves(b)
+	// fmt.Println("\nblack Rook Legal Moves when it is at d4 and h8 and there is black piece(f4) and a white piece(d6):\n")
+	// PrintBitboard(rookmoves)
+	// whiteknightmoves := allLegalWhiteKnightmoves(b)
+	// blackknightmoves := allLegalBlackKnightmoves(b)
+	// fmt.Println("White Knight Legal Moves Matrix:")
+	// PrintBitboard(whiteknightmoves)
 
-	fmt.Println("Black Knight Legal Moves Matrix:")
-	PrintBitboard(blackknightmoves)
+	// fmt.Println("Black Knight Legal Moves Matrix:")
+	// PrintBitboard(blackknightmoves)
 }

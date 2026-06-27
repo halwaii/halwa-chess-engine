@@ -151,36 +151,46 @@ func Knightmoves(square int) uint64{
 	return moves
 }
 // all Legal white Knight moves
-func LegalWhiteKnightmoves(b board, square int) uint64{
+func LegalKnightmoves(b board, square int, isWhite bool) uint64{
 	rawmoves := Knightmoves(square)
 	// so that white knight cannnot take white pieces
-	return rawmoves & ^whitepieces(b)
+	if isWhite {
+		return rawmoves & ^whitepieces(b)
+	} else {
+		return rawmoves & ^blackpieces(b)
+	}
 }
 // all Legal Black Knight moves
-func LegalBlackKnightmoves(b board, square int) uint64{
-	rawmoves := Knightmoves(square)
-	// so that black knight cannnot take black pieces
-	return rawmoves & ^blackpieces(b)
-}
+// func LegalBlackKnightmoves(b board, square int) uint64{
+// 	rawmoves := Knightmoves(square)
+// 	// so that black knight cannnot take black pieces
+// 	return rawmoves & ^blackpieces(b)
+// }
 // we will find the square on which our knight is actually standing
-func allLegalWhiteKnightmoves(b board) uint64{
-	var allWhiteKnightmoves uint64 = 0
+func allLegalKnightmoves(b board, isWhite bool) uint64{
+	var allKnightmoves uint64 = 0
 	for square := 0 ; square < 64 ; square++ {
-		if (b.WhiteKnight & (uint64(1) << uint64(square))) != 0 {
-			allWhiteKnightmoves |= LegalWhiteKnightmoves(b, square)
+		var currKnight uint64 = 0
+		if isWhite {
+			currKnight = b.WhiteKnight
+		} else {
+			currKnight = b.BlackKnight
+		}
+		if (currKnight & (uint64(1) << uint64(square))) != 0 {
+			allKnightmoves |= LegalKnightmoves(b, square, isWhite)
 		}
 	}
-	return allWhiteKnightmoves
+	return allKnightmoves
 }
-func allLegalBlackKnightmoves(b board) uint64{
-	var allBlackKnightmoves uint64 = 0
-	for square := 0 ; square < 64 ; square++ {
-		if (b.BlackKnight & (uint64(1) << uint64(square))) != 0 {
-			allBlackKnightmoves |= LegalBlackKnightmoves(b, square)
-		}
-	}
-	return allBlackKnightmoves
-}
+// func allLegalBlackKnightmoves(b board) uint64{
+// 	var allBlackKnightmoves uint64 = 0
+// 	for square := 0 ; square < 64 ; square++ {
+// 		if (b.BlackKnight & (uint64(1) << uint64(square))) != 0 {
+// 			allBlackKnightmoves |= LegalBlackKnightmoves(b, square)
+// 		}
+// 	}
+// 	return allBlackKnightmoves
+// }
 
 // all possible sliding moves
 func Slidingmoves(square int, b board, rowOffsets, colOffsets []int) uint64{
@@ -286,6 +296,53 @@ func allLegalQueenmoves(b board, isWhite bool) uint64{
 		}
 	}
 	return allQueenmoves
+}
+// all possisble king moves
+func Kingmoves(square int) uint64{
+	var moves uint64 = 0
+	// find row and col of king's position
+	row := square / 8
+	col := square % 8
+	// offsets for 8 directions
+	rowOffsets := []int{1,1,1,0,0,-1,-1,-1}
+	colOffsets := []int{-1,0,1,1,-1,-1,0,1}
+
+	for i:=0; i<8; i++{
+		// next row and cols
+		r := row + rowOffsets[i]
+		c := col + colOffsets[i]
+
+		if r>=0 && r<8 && c>=0 && c<8 {
+			// target square
+			PossibleSquare := r*8 + c
+			moves |= (uint64(1)<<uint64(PossibleSquare))
+		}
+	}
+	return moves
+}
+func LegalKingmoves(b board, square int, isWhite bool) uint64{
+	rawmoves := Kingmoves(square)
+
+	if isWhite {
+		return rawmoves & ^whitepieces(b)
+	} else {
+		return rawmoves & ^blackpieces(b)
+	}
+}
+func allLegalKingmoves(b board, isWhite bool) uint64{
+	var allKingmoves uint64 = 0
+	for square:=0; square<64; square++ {
+		var currKing uint64 = 0;
+		if isWhite{
+			currKing = b.WhiteKing
+		} else {
+			currKing = b.BlackKing
+		}
+		if (currKing & (uint64(1)<<uint64(square))) != 0{
+			allKingmoves |= LegalKingmoves(b, square, isWhite)
+		}
+	}
+	return allKingmoves
 }
 // func LegalBlackRookmoves(b board, square int) uint64{
 // 	rowOffsets := []int{1,-1,0,0}

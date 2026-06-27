@@ -182,18 +182,17 @@ func allLegalBlackKnightmoves(b board) uint64{
 	return allBlackKnightmoves
 }
 
-// all possible rook moves
-func Rookmoves(square int, b board) uint64{
+// all possible sliding moves
+func Slidingmoves(square int, b board, rowOffsets, colOffsets []int) uint64{
 	var moves uint64 = 0
-	// find row and col of current rook
+	// find row and col of current rook/bishop/queen
 	row := square / 8
 	col := square % 8
-	// rook can move in EAST WEST NORTH SOUTH directions
-	rowOffsets := []int{1,-1,0,0}
-	colOffsets := []int{0,0,1,-1}
 
 	// ray casting in every direction
-	for i :=0;i<4;i++ {
+	// here instead of 4 we will do len(rowOffsets) 
+	// cause queen can move in 8 directions
+	for i :=0;i< len(rowOffsets) ;i++ {
 		r := row + rowOffsets[i]
 		c := col + colOffsets[i]
 		// going on till end of board
@@ -212,36 +211,99 @@ func Rookmoves(square int, b board) uint64{
 	}
 	return moves
 }
-// all Legal rook moves
-func LegalWhiteRookmoves(b board, square int) uint64{
-	rawmoves := Rookmoves(square, b)
+// instead of writing different functions for black and white we wrote in single funciton
+// get all Legal rook moves
+func LegalRookmoves(b board, square int, isWhite bool) uint64{
+	// rook can move in EAST WEST NORTH SOUTH directions
+	rowOffsets := []int{1,-1,0,0}
+	colOffsets := []int{0,0,1,-1}
+	rawmoves := Slidingmoves(square, b, rowOffsets, colOffsets)
 
-	return rawmoves & ^whitepieces(b)
+	if isWhite {
+		return rawmoves & ^whitepieces(b)
+	} else {
+		return rawmoves & ^blackpieces(b)
+	}
 }
-func LegalBlackRookmoves(b board, square int) uint64{
-	rawmoves := Rookmoves(square, b)
-
-	return rawmoves & ^blackpieces(b)
-}
-// find squares where white rooks are present
-func allLegalWhiteRookmoves(b board) uint64{
+// find squares where rooks are present
+func allLegalRookmoves(b board, isWhite bool) uint64{
 	var allRookmoves uint64 = 0
 	for square:=0 ; square<64; square++{
-		if (b.WhiteRook & (uint64(1)<<uint64(square))) != 0{
-			allRookmoves |= LegalWhiteRookmoves(b, square)
+		var currentRook uint64 = 0
+		if isWhite {
+			currentRook = b.WhiteRook
+		} else {
+			currentRook = b.BlackRook
+		}
+		if (currentRook & (uint64(1)<<uint64(square))) != 0{
+			allRookmoves |= LegalRookmoves(b, square, isWhite)
 		}
 	}
 	return allRookmoves
 }
-func allLegalBlackRookmoves(b board) uint64{
-	var allRookmoves uint64 = 0
-	for square:=0 ; square<64 ; square++ {
-		if (b.BlackRook & (uint64(1) << uint64(square))) != 0{
-			allRookmoves |= LegalBlackRookmoves(b, square)
+// same logic is for bishops
+func LegalBishopmoves(b board, square int, isWhite bool) uint64{
+	// bishop moves in NE , NW , SE , SW
+	rowOffsets := []int{1,1,-1,-1}
+	colOffsets := []int{1,-1,1,-1}
+	
+	rawmoves := Slidingmoves(square, b, rowOffsets, colOffsets)
+
+	if isWhite {
+		return rawmoves & ^whitepieces(b)
+	} else {
+		return rawmoves & ^blackpieces(b)
+	}
+}
+func allLegalBishopmoves(b board, isWhite bool) uint64{
+	var allBishopmoves uint64 = 0
+	for square := 0 ; square < 64 ; square++ {
+		var currentBishop uint64 = 0
+		if isWhite {
+			currentBishop = b.WhiteBishop
+		} else {
+			currentBishop = b.BlackBishop
+		}
+		if (currentBishop & (uint64(1)<<uint64(square))) != 0 {
+			allBishopmoves |= LegalBishopmoves(b, square, isWhite)
 		}
 	}
-	return allRookmoves
+	return allBishopmoves
 }
+// queen = bishop + rook
+// it can move in 8 directions
+func allLegalQueenmoves(b board, isWhite bool) uint64{
+	var allQueenmoves uint64 = 0
+	for square :=0 ; square<64; square++ {
+		var currentQueen uint64 = 0
+		if isWhite {
+			currentQueen = b.WhiteQueen
+		} else {
+			currentQueen = b.BlackQueen
+		}
+		if (currentQueen & (uint64(1)<<uint64(square))) != 0{
+			allQueenmoves |= LegalBishopmoves(b, square, isWhite) | LegalRookmoves(b, square, isWhite)
+		}
+	}
+	return allQueenmoves
+}
+// func LegalBlackRookmoves(b board, square int) uint64{
+// 	rowOffsets := []int{1,-1,0,0}
+// 	colOffsets := []int{0,0,1,-1}
+// 	rawmoves := Slidingmoves(square, b, rowOffsets, colOffsets)
+// 	// filter so that they can't take their friendly piece
+// 	return rawmoves & ^blackpieces(b)
+// }
+
+// func allLegalBlackRookmoves(b board) uint64{
+// 	var allRookmoves uint64 = 0
+// 	for square:=0 ; square<64 ; square++ {
+// 		if (b.BlackRook & (uint64(1) << uint64(square))) != 0{
+// 			allRookmoves |= LegalBlackRookmoves(b, square)
+// 		}
+// 	}
+// 	return allRookmoves
+// }
 func PrintBitboard(bitboard uint64) {
     for row := 7; row >= 0; row-- {
         fmt.Printf("%v ", row+1)
@@ -278,6 +340,11 @@ func main(){
 	fmt.Println("current board\n")
 	Printboard(b)
 
+	// b.WhiteQueen = uint64(1) << 28
+	// b.BlackPawns = uint64(1) << 46
+	// fmt.Println("\nwhite queen legal moves(d4) and a blackpiece at g6 : \n")
+	// queenmoves := allLegalQueenmoves(b, true)
+	// PrintBitboard(queenmoves)
 	// rookmoves := allLegalBlackRookmoves(b)
 	// fmt.Println("\nblack Rook Legal Moves when it is at d4 and h8 and there is black piece(f4) and a white piece(d6):\n")
 	// PrintBitboard(rookmoves)

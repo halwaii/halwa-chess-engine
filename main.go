@@ -15,6 +15,14 @@ import (
 const notA_lane uint64 = 0xFEFEFEFEFEFEFEFE
 const notH_lane uint64 = 0x7F7F7F7F7F7F7F7F
 
+// already making mask to check if there are any piece b/w king and rook
+const (
+	whiteKingsidemask = (uint64(1)<<5) | (uint64(1)<<6)
+	whiteQueensidemask = (uint64(1)<<1) | (uint64(1)<<2) | (uint64(1)<<3)
+	blackKingsidemask = (uint64(1)<<61) | (uint64(1)<<62)
+	blackQueensidemask = (uint64(1)<<57) | (uint64(1)<<58) | (uint64(1)<<59)
+)
+
 // make a struct for every piece type and color
 // to store board state
 type board struct{
@@ -322,12 +330,48 @@ func Kingmoves(square int) uint64{
 }
 func LegalKingmoves(b board, square int, isWhite bool) uint64{
 	rawmoves := Kingmoves(square)
-
+	// check for castling
+	var finalmoves uint64 = 0
 	if isWhite {
-		return rawmoves & ^whitepieces(b)
+		finalmoves = rawmoves & ^whitepieces(b)
+		// white castle checking . king must be on e1
+		if square == 4 {
+			//king side castle from e1 -> g1
+			// all the space should be empty
+			if (Occupiedsquares(b) & whiteKingsidemask) == 0 {
+				// and should not be attacked by black piece
+				// e1 , f1, g1 should not be attacked by black
+				if !IsSquareAttacked(4,false,b) && !IsSquareAttacked(5,false,b) && !IsSquareAttacked(6,false,b) {
+					finalmoves |= uint64(1)<<6
+				}
+			}
+			// queen side castle from e1 to c1
+			if (Occupiedsquares(b) & whiteQueensidemask) == 0 {
+				if !IsSquareAttacked(2,false,b) && !IsSquareAttacked(3,false,b) && !IsSquareAttacked(4,false,b){
+					finalmoves |= uint64(1)<<2
+				}
+			}
+		}
 	} else {
-		return rawmoves & ^blackpieces(b)
+		finalmoves = rawmoves & ^blackpieces(b)
+		// black castling check . king must be on e8
+		if square == 60 {
+			// king side from e8 -> g8
+			if (Occupiedsquares(b) & blackKingsidemask) == 0 {
+				// e8, f8, g8 should not be attacked by white
+				if !IsSquareAttacked(60,true,b) && !IsSquareAttacked(61,true,b) && !IsSquareAttacked(62,true,b) {
+					finalmoves |= uint64(1)<<62
+				}
+			}
+			// queen side from e8 -> c8
+			if (Occupiedsquares(b) & blackQueensidemask) == 0 {
+				if !IsSquareAttacked(58,true,b) && !IsSquareAttacked(59,true,b) && !IsSquareAttacked(60,true,b) {
+					finalmoves |= uint64(1)<<58
+				}
+			}
+		}
 	}
+	return finalmoves
 }
 func allLegalKingmoves(b board, isWhite bool) uint64{
 	var allKingmoves uint64 = 0
@@ -343,6 +387,25 @@ func allLegalKingmoves(b board, isWhite bool) uint64{
 		}
 	}
 	return allKingmoves
+}
+func isinCheck(b board, isWhite bool) bool{
+	var kingSquare int
+	var kingBitboard uint64 = 0
+	if isWhite {
+		kingBitboard = b.WhiteKing
+	} else {
+		kingBitboard = b.BlackKing
+	}
+	// we find find square of that particular king
+	for square :=0; square<64; square++ {
+		if (kingBitboard & (uint64(1)<<uint64(square))) != 0 {
+			kingSquare = square
+			break
+		}
+	}
+	// if white is in check then it should be attacked by black piece
+	// so !isWhite kiya
+	return IsSquareAttacked(kingSquare, !isWhite, b)
 }
 // func LegalBlackRookmoves(b board, square int) uint64{
 // 	rowOffsets := []int{1,-1,0,0}
@@ -361,6 +424,57 @@ func allLegalKingmoves(b board, isWhite bool) uint64{
 // 	}
 // 	return allRookmoves
 // }
+
+// is our target square under attacked ?
+// we will be using revese logic . 
+// we will check for all moves of other pieces which will fall on that square
+func IsSquareAttacked(square int, isWhite bool, b board) bool{
+	// check attacks form pawn
+	if isWhite {
+		// row should be more than 0
+		if square/8 > 0 {
+			if square%8 > 0 && (b.WhitePawns & (uint64(1)<<uint64(square-9))) != 0 { return true}
+			if square%8 < 7 && (b.WhitePawns & (uint64(1)<<uint64(square-7))) != 0 { return true}
+		}
+	} else {
+		// row should be less than 7
+		if square/8 < 7 {
+			// check for A_lane and H_lane
+			if square%8 > 0 && (b.BlackPawns & (uint64(1)<<uint64(square+7))) != 0 { return true}
+			if square%8 < 7 && (b.BlackPawns & (uint64(1)<<uint64(square+9))) != 0 { return true}
+		}
+	}
+	// check attacks form knight
+	// we will find knight moves on that particular square and then 
+	// check if knight is present on those square
+	if isWhite {
+		if (Knightmoves(square) & b.WhiteKnight) != 0 { return true}
+	} else {
+		if (Knightmoves(square) & b.BlackKnight) != 0 { return true}
+	}
+	// check attacks form rook / queen (straight line)
+	// cast rays for dummy rook from given square
+	rookAttacks := Slidingmoves(square, b, []int{1,-1,0,0}, []int{0,0,1,-1})
+	if isWhite {
+		if (rookAttacks & (b.WhiteRook | b.WhiteQueen)) != 0 { return true}
+	} else {
+		if (rookAttacks & (b.BlackRook | b.BlackQueen)) != 0 {return true}
+	}
+	// check attacks from bishop / queen (diagonal)
+	bishopAttacks := Slidingmoves(square, b, []int{1,1,-1,-1}, []int{1,-1,1,-1})
+	if isWhite {
+		if (bishopAttacks & (b.WhiteBishop | b.WhiteQueen)) != 0 {return true}
+	} else {
+		if (bishopAttacks & (b.BlackBishop | b.BlackQueen)) != 0 {return true}
+	}
+	// check attacks from king
+	if isWhite {
+		if (Kingmoves(square) & b.WhiteKing) != 0 {return true}
+	} else {
+		if (Kingmoves(square) & b.BlackKing) != 0 {return true}
+	}
+	return false
+}
 func PrintBitboard(bitboard uint64) {
     for row := 7; row >= 0; row-- {
         fmt.Printf("%v ", row+1)

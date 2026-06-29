@@ -28,7 +28,7 @@ const (
 type board struct{
 	// here every piece is a bitboard itself
 	// 6 for white
-	WhitePawns uint64;
+	WhitePawns uint64; 
 	WhiteKing uint64;
 	WhiteQueen uint64;
 	WhiteBishop uint64;
@@ -41,6 +41,8 @@ type board struct{
 	BlackBishop uint64;
 	BlackKnight uint64;
 	BlackRook uint64;
+	// square of last pawn which double pushed
+	EnPassantSquare int
 }
 
 func Printboard(b board) {
@@ -89,41 +91,58 @@ func Occupiedsquares(b board) uint64{
 }
 
 // move pawn
-func Whitepawnpush(b board,occupied uint64, blackpieces uint64) uint64{
+func Whitepawnpush(b board) uint64{
 	// single push
-	Singlepush := (b.WhitePawns << 8) & ^occupied 
+	Singlepush := (b.WhitePawns << 8) & ^Occupiedsquares(b)
 
 	// double push
 	// and row 3 and row 4 should be empty
 	row3mask := uint64(0x000000000000FF0000)
-	Doublepush := ((Singlepush & row3mask)<<8) & ^occupied
+	Doublepush := ((Singlepush & row3mask)<<8) & ^Occupiedsquares(b)
 
 	// capture
 	// capture can be left (<< 7) but it should not be on A-lane and it can only capture black piece
-	Leftcapture := ((b.WhitePawns & notA_lane) << 7) & blackpieces
+	Leftcapture := ((b.WhitePawns & notA_lane) << 7) & blackpieces(b)
 
 	// capture can be right (<< 9) but it should not be on H-lane and there should be black piece
-	Rightcapture := ((b.WhitePawns & notH_lane) << 9) & blackpieces
+	Rightcapture := ((b.WhitePawns & notH_lane) << 9) & blackpieces(b)
 
-	return Singlepush | Doublepush | Leftcapture |Rightcapture
+	// dynamic En passant 
+	var LeftEnpassant uint64 = 0
+	var RightEnpassant uint64 = 0
+
+	if b.EnPassantSquare != -1 {
+		LeftEnpassant = ((b.WhitePawns & notA_lane) << 7) & (uint64(1)<<uint64(b.EnPassantSquare))
+		RightEnpassant = ((b.WhitePawns & notH_lane) << 9) & (uint64(1)<<uint64(b.EnPassantSquare))
+	}
+
+	return Singlepush | Doublepush | Leftcapture | Rightcapture | LeftEnpassant | RightEnpassant
 }
 
-func Blackpawnpush(b board, occupied uint64, whitepieces uint64) uint64{
+func Blackpawnpush(b board) uint64{
 	// single push
-	Singlepush := (b.BlackPawns >> 8) & ^occupied
+	Singlepush := (b.BlackPawns >> 8) & ^Occupiedsquares(b)
 
 	// double push
 	// row 6 and 5 should be empty
 	mask6row := uint64(0x0000FF0000000000)
-	Doublepush := ((Singlepush & mask6row) >> 8) & ^occupied
+	Doublepush := ((Singlepush & mask6row) >> 8) & ^Occupiedsquares(b)
 
 	// capture
-	// capture can be left (>> 9) and not on A-lane
-	Leftcapture := ((b.BlackPawns & notA_lane) >> 9) & whitepieces
+	// capture00 can be left (>> 9) and not on A-lane
+	Leftcapture := ((b.BlackPawns & notA_lane) >> 9) & whitepieces(b)
 	// capture can be right (>> 7) and not on H-lane
-	Rightcapture := ((b.BlackPawns & notH_lane) >> 7) & whitepieces
+	Rightcapture := ((b.BlackPawns & notH_lane) >> 7) & whitepieces(b)
 
-	return Singlepush | Doublepush | Leftcapture | Rightcapture
+	// dynamic en passant
+	var LeftEnpassant uint64 = 0
+	var RightEnpassant uint64 = 0
+	if b.EnPassantSquare != -1 {
+		LeftEnpassant = ((b.BlackPawns & notA_lane) >> 7) & (uint64(1)<<uint64(b.EnPassantSquare))
+		RightEnpassant = ((b.BlackPawns & notH_lane) >> 9) & (uint64(1)<<uint64(b.EnPassantSquare))
+	}
+
+	return Singlepush | Doublepush | Leftcapture | Rightcapture | LeftEnpassant | RightEnpassant
 }
 func whitepieces(b board) uint64{
 	return b.WhiteBishop | b.WhiteKing | b.WhiteKnight | b.WhitePawns | b.WhiteQueen | b.WhiteRook
@@ -496,7 +515,7 @@ func main(){
 	b.WhitePawns = 0x000000000000FF00
 	b.WhiteKing = 0x0000000000000010
 	b.WhiteQueen = 0x0000000000000008
-	b.WhiteBishop = 0x0000000000000024
+	b.WhiteBishop = 0x0000000000000024 
 	b.WhiteKnight = 0x0000000000000042
 	b.WhiteRook = 0x0000000000000081
 	

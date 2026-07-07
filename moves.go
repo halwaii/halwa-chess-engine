@@ -203,20 +203,37 @@ func LegalRookmoves(b board, square int, isWhite bool) uint64{
 	}
 }
 // find squares where rooks are present
-func allLegalRookmoves(b board, isWhite bool) uint64{
-	var allRookmoves uint64 = 0
-	for square:=0 ; square<64; square++{
-		var currentRook uint64 = 0
-		if isWhite {
-			currentRook = b.WhiteRook
-		} else {
-			currentRook = b.BlackRook
-		}
-		if (currentRook & (uint64(1)<<uint64(square))) != 0{
-			allRookmoves |= LegalRookmoves(b, square, isWhite)
-		}
+func allLegalRookmoves(b board, isWhite bool, list *MoveList) {
+
+	var rooks uint64 = 0
+	if isWhite{
+		rooks = b.WhiteRook
+	} else {
+		rooks = b.BlackRook
 	}
-	return allRookmoves
+	for rooks != 0 {
+
+		fromSquare := bits.TrailingZeros64(rooks)
+
+		RookMovesbitboard := LegalRookmoves(b,fromSquare,isWhite)
+
+		ExtractMoves(fromSquare, RookMovesbitboard, 0, list)
+
+		rooks &= (rooks - 1)
+	}
+	// var allRookmoves uint64 = 0
+	// for square:=0 ; square<64; square++{
+	// 	var currentRook uint64 = 0
+	// 	if isWhite {
+	// 		currentRook = b.WhiteRook
+	// 	} else {
+	// 		currentRook = b.BlackRook
+	// 	}
+	// 	if (currentRook & (uint64(1)<<uint64(square))) != 0{
+	// 		allRookmoves |= LegalRookmoves(b, square, isWhite)
+	// 	}
+	// }
+	// return allRookmoves
 }
 // same logic is for bishops
 func LegalBishopmoves(b board, square int, isWhite bool) uint64{
@@ -232,37 +249,69 @@ func LegalBishopmoves(b board, square int, isWhite bool) uint64{
 		return rawmoves & ^blackpieces(b)
 	}
 }
-func allLegalBishopmoves(b board, isWhite bool) uint64{
-	var allBishopmoves uint64 = 0
-	for square := 0 ; square < 64 ; square++ {
-		var currentBishop uint64 = 0
-		if isWhite {
-			currentBishop = b.WhiteBishop
-		} else {
-			currentBishop = b.BlackBishop
-		}
-		if (currentBishop & (uint64(1)<<uint64(square))) != 0 {
-			allBishopmoves |= LegalBishopmoves(b, square, isWhite)
-		}
+func allLegalBishopmoves(b board, isWhite bool, list *MoveList) {
+	var bishops uint64 = 0
+	if isWhite{
+		bishops = b.WhiteBishop
+	} else {
+		bishops = b.BlackBishop
 	}
-	return allBishopmoves
+	for bishops != 0 {
+
+		fromSquare := bits.TrailingZeros64(bishops)
+
+		BishopMovesbitboard := LegalBishopmoves(b,fromSquare,isWhite)
+
+		ExtractMoves(fromSquare, BishopMovesbitboard, 0, list)
+
+		bishops &= (bishops - 1)
+	}
+	// var allBishopmoves uint64 = 0
+	// for square := 0 ; square < 64 ; square++ {
+	// 	var currentBishop uint64 = 0
+	// 	if isWhite {
+	// 		currentBishop = b.WhiteBishop
+	// 	} else {
+	// 		currentBishop = b.BlackBishop
+	// 	}
+	// 	if (currentBishop & (uint64(1)<<uint64(square))) != 0 {
+	// 		allBishopmoves |= LegalBishopmoves(b, square, isWhite)
+	// 	}
+	// }
+	// return allBishopmoves
 }
 // queen = bishop + rook
 // it can move in 8 directions
-func allLegalQueenmoves(b board, isWhite bool) uint64{
-	var allQueenmoves uint64 = 0
-	for square :=0 ; square<64; square++ {
-		var currentQueen uint64 = 0
-		if isWhite {
-			currentQueen = b.WhiteQueen
-		} else {
-			currentQueen = b.BlackQueen
-		}
-		if (currentQueen & (uint64(1)<<uint64(square))) != 0{
-			allQueenmoves |= LegalBishopmoves(b, square, isWhite) | LegalRookmoves(b, square, isWhite)
-		}
+func allLegalQueenmoves(b board, isWhite bool, list *MoveList) {
+	var queen uint64 = 0
+	if isWhite{
+		queen = b.WhiteQueen
+	} else {
+		queen = b.BlackQueen
 	}
-	return allQueenmoves
+	for queen != 0 {
+
+		fromSquare := bits.TrailingZeros64(queen)
+
+		QueenMovesbitboard := LegalBishopmoves(b,fromSquare,isWhite) | LegalRookmoves(b,fromSquare,isWhite)
+
+		ExtractMoves(fromSquare, QueenMovesbitboard, 0, list)
+
+		queen &= (queen - 1)
+	}
+	// var allQueenmoves uint64 = 0
+	// for square :=0 ; square<64; square++ {
+	// 	var currentQueen uint64 = 0
+	// 	if isWhite {
+	// 		currentQueen = b.WhiteQueen
+	// 	} else {
+	// 		currentQueen = b.BlackQueen
+	// 	}
+	// 	if (currentQueen & (uint64(1)<<uint64(square))) != 0{
+	// 		allQueenmoves |= LegalBishopmoves(b, square, isWhite) | LegalRookmoves(b, square, isWhite)
+	// 	}
+	// }
+	// return allQueenmoves
 }
 // all possisble king moves
 func Kingmoves(square int) uint64{
@@ -332,20 +381,36 @@ func LegalKingmoves(b board, square int, isWhite bool) uint64{
 	}
 	return finalmoves
 }
-func allLegalKingmoves(b board, isWhite bool) uint64{
-	var allKingmoves uint64 = 0
-	for square:=0; square<64; square++ {
-		var currKing uint64 = 0;
-		if isWhite{
-			currKing = b.WhiteKing
-		} else {
-			currKing = b.BlackKing
-		}
-		if (currKing & (uint64(1)<<uint64(square))) != 0{
-			allKingmoves |= LegalKingmoves(b, square, isWhite)
-		}
+func allLegalKingmoves(b board, isWhite bool, list *MoveList) {
+	var king uint64 = 0
+	if isWhite{
+		king = b.WhiteKing
+	} else {
+		king = b.BlackKing
 	}
-	return allKingmoves
+	for king != 0 {
+
+		fromSquare := bits.TrailingZeros64(king)
+
+		KingMovesbitboard := LegalKingmoves(b,fromSquare,isWhite)
+
+		ExtractMoves(fromSquare, KingMovesbitboard, 0, list)
+
+		king &= (king - 1)
+	}
+	// var allKingmoves uint64 = 0
+	// for square:=0; square<64; square++ {
+	// 	var currKing uint64 = 0;
+	// 	if isWhite{
+	// 		currKing = b.WhiteKing
+	// 	} else {
+	// 		currKing = b.BlackKing
+	// 	}
+	// 	if (currKing & (uint64(1)<<uint64(square))) != 0{
+	// 		allKingmoves |= LegalKingmoves(b, square, isWhite)
+	// 	}
+	// }
+	// return allKingmoves
 }
 func isinCheck(b board, isWhite bool) bool{
 	var kingSquare int

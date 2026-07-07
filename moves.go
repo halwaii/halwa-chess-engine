@@ -1,5 +1,9 @@
 package main
 
+import (
+	"math/bits"
+)
+
 // move pawn
 func Whitepawnpush(b board) uint64{
 	// single push
@@ -99,20 +103,51 @@ func LegalKnightmoves(b board, square int, isWhite bool) uint64{
 // 	return rawmoves & ^blackpieces(b)
 // }
 // we will find the square on which our knight is actually standing
-func allLegalKnightmoves(b board, isWhite bool) uint64{
-	var allKnightmoves uint64 = 0
-	for square := 0 ; square < 64 ; square++ {
-		var currKnight uint64 = 0
-		if isWhite {
-			currKnight = b.WhiteKnight
-		} else {
-			currKnight = b.BlackKnight
-		}
-		if (currKnight & (uint64(1) << uint64(square))) != 0 {
-			allKnightmoves |= LegalKnightmoves(b, square, isWhite)
-		}
+
+// this function will now add the moves directly to our list
+// instead of returning uint64
+
+// now we will find moves for "each knight" so that we can
+// store "fromSquare"
+func allLegalKnightmoves(b board, isWhite bool, list *MoveList) {
+	var knights uint64 = 0
+	if isWhite {
+		knights = b.WhiteKnight
+	} else {
+		knights = b.BlackKnight
 	}
-	return allKnightmoves
+	// scan for every knight on board
+	// same as we did for extractMoves
+	for knights != 0 {
+		// 1) we will find fromSquare from trailing zeros
+		fromSquare := bits.TrailingZeros64(knights)
+
+		// 2) find legal moves of that particular piece
+		KnightMovesbitboard := LegalKnightmoves(b,fromSquare,isWhite)
+
+		// 3) now we will extract moves and add to our list from this particular square
+		// flag is set 0 as of n ow(will update it)
+		ExtractMoves(fromSquare, KnightMovesbitboard, 0, list)
+
+		// 4) we will remove current knight and move to next
+		knights &= (knights - 1)
+	}
+
+	//old code down
+
+	// var allKnightmoves uint64 = 0
+	// for square := 0 ; square < 64 ; square++ {
+	// 	var currKnight uint64 = 0
+	// 	if isWhite {
+	// 		currKnight = b.WhiteKnight
+	// 	} else {
+	// 		currKnight = b.BlackKnight
+	// 	}
+	// 	if (currKnight & (uint64(1) << uint64(square))) != 0 {
+	// 		allKnightmoves |= LegalKnightmoves(b, square, isWhite)
+	// 	}
+	// }
+	// return allKnightmoves
 }
 // func allLegalBlackKnightmoves(b board) uint64{
 // 	var allBlackKnightmoves uint64 = 0

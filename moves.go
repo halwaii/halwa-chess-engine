@@ -111,24 +111,34 @@ func LegalKnightmoves(b board, square int, isWhite bool) uint64{
 // store "fromSquare"
 func allLegalKnightmoves(b board, isWhite bool, list *MoveList) {
 	var knights uint64 = 0
+	// make new bitboard of enemyPieces
+	var enemyPieces uint64 = 0
 	if isWhite {
 		knights = b.WhiteKnight
+		enemyPieces = blackpieces(b)
 	} else {
 		knights = b.BlackKnight
+		enemyPieces = whitepieces(b)
 	}
 	// scan for every knight on board
 	// same as we did for extractMoves
 	for knights != 0 {
 		// 1) we will find fromSquare from trailing zeros
 		fromSquare := bits.TrailingZeros64(knights)
-
 		// 2) find legal moves of that particular piece
 		KnightMovesbitboard := LegalKnightmoves(b,fromSquare,isWhite)
-
+		// to make flags dynamic 
+		// for knight/bishop/queen/rook/king there are only 2 flags
+		// capture and quiet move
+		captures := KnightMovesbitboard & enemyPieces
+		// quietmove
+		quietMove := KnightMovesbitboard & ^enemyPieces
 		// 3) now we will extract moves and add to our list from this particular square
 		// flag is set 0 as of n ow(will update it)
-		ExtractMoves(fromSquare, KnightMovesbitboard, 0, list)
-
+		// 0 for quiet move
+		ExtractMoves(fromSquare, quietMove, 0, list)
+		// 4 for capture
+		ExtractMoves(fromSquare, captures, 4, list)
 		// 4) we will remove current knight and move to next
 		knights &= (knights - 1)
 	}
@@ -206,10 +216,13 @@ func LegalRookmoves(b board, square int, isWhite bool) uint64{
 func allLegalRookmoves(b board, isWhite bool, list *MoveList) {
 
 	var rooks uint64 = 0
+	var enemyPieces uint64 = 0
 	if isWhite{
 		rooks = b.WhiteRook
+		enemyPieces = blackpieces(b)
 	} else {
 		rooks = b.BlackRook
+		enemyPieces = whitepieces(b)
 	}
 	for rooks != 0 {
 
@@ -217,7 +230,11 @@ func allLegalRookmoves(b board, isWhite bool, list *MoveList) {
 
 		RookMovesbitboard := LegalRookmoves(b,fromSquare,isWhite)
 
-		ExtractMoves(fromSquare, RookMovesbitboard, 0, list)
+		captures := RookMovesbitboard & enemyPieces
+		quietMove := RookMovesbitboard & ^enemyPieces
+
+		ExtractMoves(fromSquare, quietMove, 0, list)
+		ExtractMoves(fromSquare, captures, 4, list)
 
 		rooks &= (rooks - 1)
 	}
@@ -251,10 +268,13 @@ func LegalBishopmoves(b board, square int, isWhite bool) uint64{
 }
 func allLegalBishopmoves(b board, isWhite bool, list *MoveList) {
 	var bishops uint64 = 0
+	var enemyPieces uint64 = 0
 	if isWhite{
 		bishops = b.WhiteBishop
+		enemyPieces = blackpieces(b)
 	} else {
 		bishops = b.BlackBishop
+		enemyPieces = whitepieces(b)
 	}
 	for bishops != 0 {
 
@@ -262,7 +282,11 @@ func allLegalBishopmoves(b board, isWhite bool, list *MoveList) {
 
 		BishopMovesbitboard := LegalBishopmoves(b,fromSquare,isWhite)
 
-		ExtractMoves(fromSquare, BishopMovesbitboard, 0, list)
+		captures := BishopMovesbitboard & enemyPieces
+		quietMove := BishopMovesbitboard & ^enemyPieces
+
+		ExtractMoves(fromSquare, quietMove, 0, list)
+		ExtractMoves(fromSquare, captures, 4, list)
 
 		bishops &= (bishops - 1)
 	}
@@ -284,10 +308,13 @@ func allLegalBishopmoves(b board, isWhite bool, list *MoveList) {
 // it can move in 8 directions
 func allLegalQueenmoves(b board, isWhite bool, list *MoveList) {
 	var queen uint64 = 0
+	var enemyPieces uint64 = 0
 	if isWhite{
 		queen = b.WhiteQueen
+		enemyPieces = blackpieces(b)
 	} else {
 		queen = b.BlackQueen
+		enemyPieces = whitepieces(b)
 	}
 	for queen != 0 {
 
@@ -295,7 +322,11 @@ func allLegalQueenmoves(b board, isWhite bool, list *MoveList) {
 
 		QueenMovesbitboard := LegalBishopmoves(b,fromSquare,isWhite) | LegalRookmoves(b,fromSquare,isWhite)
 
-		ExtractMoves(fromSquare, QueenMovesbitboard, 0, list)
+		captures := QueenMovesbitboard & enemyPieces
+		quietMove := QueenMovesbitboard & ^enemyPieces
+
+		ExtractMoves(fromSquare, quietMove, 0, list)
+		ExtractMoves(fromSquare, captures, 4, list)
 
 		queen &= (queen - 1)
 	}
@@ -383,10 +414,13 @@ func LegalKingmoves(b board, square int, isWhite bool) uint64{
 }
 func allLegalKingmoves(b board, isWhite bool, list *MoveList) {
 	var king uint64 = 0
+	var enemyPieces uint64 = 0
 	if isWhite{
 		king = b.WhiteKing
+		enemyPieces = blackpieces(b)
 	} else {
 		king = b.BlackKing
+		enemyPieces = whitepieces(b)
 	}
 	for king != 0 {
 
@@ -394,7 +428,11 @@ func allLegalKingmoves(b board, isWhite bool, list *MoveList) {
 
 		KingMovesbitboard := LegalKingmoves(b,fromSquare,isWhite)
 
-		ExtractMoves(fromSquare, KingMovesbitboard, 0, list)
+		captures := KingMovesbitboard & enemyPieces
+		quietMove := KingMovesbitboard & ^enemyPieces
+
+		ExtractMoves(fromSquare, quietMove, 0, list)
+		ExtractMoves(fromSquare, captures, 4, list)
 
 		king &= (king - 1)
 	}

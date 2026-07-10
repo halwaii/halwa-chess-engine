@@ -37,3 +37,41 @@ func ExtractMoves(fromSqare int, moveBitboard uint64,flag uint16, list *MoveList
 		moveBitboard &= (moveBitboard - 1)
 	}
 }
+
+// extract pawn moves
+func ExtractWhitePawnmoves(shift int, moveBitboard uint64, flag uint16, list *MoveList){
+	// calculate tosquare and fromSquare
+	for moveBitboard != 0 {
+		toSquare := bits.TrailingZeros64(moveBitboard)
+
+		// reverse math to find formSquare
+		fromSquare := toSquare - shift
+
+		// encode the move
+		encodeMove := EncodeMove(uint16(fromSquare), uint16(toSquare), flag)
+		// add move to ourlist
+		AddMove(list, encodeMove)
+
+		// update the bitboard
+		moveBitboard &= (moveBitboard - 1)
+	}
+}
+// same for black just 1 change
+func ExtractBlackPawnmoves(shift int, moveBitboard uint64, flag uint16, list *MoveList){
+	// calculate tosquare and fromSquare
+	for moveBitboard != 0 {
+		toSquare := bits.TrailingZeros64(moveBitboard)
+
+		// reverse math to find formSquare
+		// here is the change
+		fromSquare := toSquare + shift
+
+		// encode the move
+		encodeMove := EncodeMove(uint16(fromSquare), uint16(toSquare), flag)
+		// add move to ourlist
+		AddMove(list, encodeMove)
+
+		// update the bitboard
+		moveBitboard &= (moveBitboard - 1)
+	}
+}

@@ -4,60 +4,228 @@ import (
 	"math/bits"
 )
 
-// move pawn
-func Whitepawnpush(b board) uint64{
-	// single push
+func WhitePawnmoves(b board, list *MoveList){
+
+	// 1) single push (shift + 8)
 	Singlepush := (b.WhitePawns << 8) & ^Occupiedsquares(b)
 
-	// double push
-	// and row 3 and row 4 should be empty
-	row3mask := uint64(0x000000000000FF0000)
-	Doublepush := ((Singlepush & row3mask)<<8) & ^Occupiedsquares(b)
+	// promotions are different
+	// all of rank 8 is 1 now . rank = row
+	rank8mask := uint64(0xFF00000000000000)
+	// normal is when pawn does not reach rank 8
+	normalPush := Singlepush & ^rank8mask
+	// promotio is when pawn reaches rank 8
+	promotions := Singlepush & rank8mask
 
-	// capture
-	// capture can be left (<< 7) but it should not be on A-lane and it can only capture black piece
-	Leftcapture := ((b.WhitePawns & notA_lane) << 7) & blackpieces(b)
+	// normal push will be quiet move and shift will be 8
+	ExtractWhitePawnmoves(8, normalPush, QuietMove, list)
 
-	// capture can be right (<< 9) but it should not be on H-lane and there should be black piece
-	Rightcapture := ((b.WhitePawns & notH_lane) << 9) & blackpieces(b)
-
-	// dynamic En passant 
-	var LeftEnpassant uint64 = 0
-	var RightEnpassant uint64 = 0
-
-	if b.EnPassantSquare != -1 {
-		LeftEnpassant = ((b.WhitePawns & notA_lane) << 7) & (uint64(1)<<uint64(b.EnPassantSquare))
-		RightEnpassant = ((b.WhitePawns & notH_lane) << 9) & (uint64(1)<<uint64(b.EnPassantSquare))
+	// a pawn can promote into 4 pieces (queen, rook, knight, bishop)
+	for promotions != 0 {
+		toSquare := bits.TrailingZeros64(promotions)
+		fromSquare := toSquare - 8
+		AddMove(list, EncodeMove(uint16(fromSquare), uint16(toSquare), QueenPromo)) // to promote queen
+		AddMove(list, EncodeMove(uint16(fromSquare), uint16(toSquare), RookPromo)) // to promote rook
+		AddMove(list, EncodeMove(uint16(fromSquare), uint16(toSquare), BishopPromo)) // to promote bishop
+		AddMove(list, EncodeMove(uint16(fromSquare), uint16(toSquare), KnightPromo)) // to promote knight
+		promotions &= (promotions - 1)
 	}
 
-	return Singlepush | Doublepush | Leftcapture | Rightcapture | LeftEnpassant | RightEnpassant
+	// 2) double push
+	row4mask := uint64(0x00000000FF000000)
+	doublePush := (Singlepush << 8) & ^Occupiedsquares(b) & row4mask
+	// extract and add move to list
+	ExtractWhitePawnmoves(16, doublePush, DoublePawnPush, list)
+
+	// 3) left captures
+	Leftcapture := ((b.WhitePawns & notA_lane) << 7) & blackpieces(b)
+	// 2 types of left capture -> normal capture
+	// 						   -> promo capture
+	normalLeftcapture := Leftcapture & ^rank8mask
+	promoLeftcapture := Leftcapture & rank8mask
+
+	// normal capture
+	ExtractWhitePawnmoves(7, normalLeftcapture, Capture, list)
+
+	// promo captures
+	for promoLeftcapture != 0 {
+		toSquare := bits.TrailingZeros64(promoLeftcapture)
+		fromSquare := toSquare - 7
+		AddMove(list, EncodeMove(uint16(fromSquare), uint16(toSquare), QueenPromoCap)) // to promote queen
+		AddMove(list, EncodeMove(uint16(fromSquare), uint16(toSquare), RookPromoCap)) // to promote rook
+		AddMove(list, EncodeMove(uint16(fromSquare), uint16(toSquare), BishopPromoCap)) // to promote bishop
+		AddMove(list, EncodeMove(uint16(fromSquare), uint16(toSquare), KnightPromoCap)) // to promote knight
+		promoLeftcapture &= (promoLeftcapture - 1)
+	}
+
+	// 4) right captures
+	Rightcapture := ((b.WhitePawns & notH_lane) << 9) & blackpieces(b)
+	// same as left capture
+	normalRightcapture := Rightcapture & ^rank8mask
+	promoRightcapture := Rightcapture & rank8mask
+
+	ExtractWhitePawnmoves(9, normalRightcapture, Capture, list)
+
+	// promo captures
+	for promoRightcapture != 0 {
+		toSquare := bits.TrailingZeros64(promoRightcapture)
+		fromSquare := toSquare - 9
+		AddMove(list, EncodeMove(uint16(fromSquare), uint16(toSquare), QueenPromoCap)) // to promote queen
+		AddMove(list, EncodeMove(uint16(fromSquare), uint16(toSquare), RookPromoCap)) // to promote rook
+		AddMove(list, EncodeMove(uint16(fromSquare), uint16(toSquare), BishopPromoCap)) // to promote bishop
+		AddMove(list, EncodeMove(uint16(fromSquare), uint16(toSquare), KnightPromoCap)) // to promote knight
+		promoRightcapture &= (promoRightcapture - 1)
+	}
+
+	// 5) en passnat (right or left)
+	if b.EnPassantSquare != -1 {
+		// logic same as old 
+		LeftEnpassant := ((b.WhitePawns & notA_lane) << 7) & (uint64(1)<<uint64(b.EnPassantSquare))
+		ExtractWhitePawnmoves(7, LeftEnpassant, EpCapture, list)
+
+ 		RightEnpassant := ((b.WhitePawns & notH_lane) << 9) & (uint64(1)<<uint64(b.EnPassantSquare))
+		 ExtractWhitePawnmoves(9, RightEnpassant, EpCapture, list)
+	}
 }
 
-func Blackpawnpush(b board) uint64{
-	// single push
+// old pawn moves
+// // move pawn
+// func Whitepawnpush(b board) uint64{
+// 	// single push
+// 	Singlepush := (b.WhitePawns << 8) & ^Occupiedsquares(b)
+
+// 	// double push
+// 	// and row 3 and row 4 should be empty
+// 	row3mask := uint64(0x000000000000FF0000)
+// 	Doublepush := ((Singlepush & row3mask)<<8) & ^Occupiedsquares(b)
+
+// 	// capture
+// 	// capture can be left (<< 7) but it should not be on A-lane and it can only capture black piece
+// 	Leftcapture := ((b.WhitePawns & notA_lane) << 7) & blackpieces(b)
+
+// 	// capture can be right (<< 9) but it should not be on H-lane and there should be black piece
+// 	Rightcapture := ((b.WhitePawns & notH_lane) << 9) & blackpieces(b)
+
+// 	// dynamic En passant 
+// 	var LeftEnpassant uint64 = 0
+// 	var RightEnpassant uint64 = 0
+
+// 	if b.EnPassantSquare != -1 {
+// 		LeftEnpassant = ((b.WhitePawns & notA_lane) << 7) & (uint64(1)<<uint64(b.EnPassantSquare))
+// 		RightEnpassant = ((b.WhitePawns & notH_lane) << 9) & (uint64(1)<<uint64(b.EnPassantSquare))
+// 	}
+
+// 	return Singlepush | Doublepush | Leftcapture | Rightcapture | LeftEnpassant | RightEnpassant
+// }
+
+func BlackPawnmoves(b board, list *MoveList){
+
+	// 1) single push (shift + 8)
 	Singlepush := (b.BlackPawns >> 8) & ^Occupiedsquares(b)
 
-	// double push
-	// row 6 and 5 should be empty
-	mask6row := uint64(0x0000FF0000000000)
-	Doublepush := ((Singlepush & mask6row) >> 8) & ^Occupiedsquares(b)
+	// promotions are different
+	// all of rank 1 is 1 now . rank = row
+	rank1mask := uint64(0x00000000000000FF)
+	// normal is when pawn does not reach rank 1
+	normalPush := Singlepush & ^rank1mask
+	// promotio is when pawn reaches rank 1
+	promotions := Singlepush & rank1mask
 
-	// capture
-	// capture00 can be left (>> 9) and not on A-lane
-	Leftcapture := ((b.BlackPawns & notA_lane) >> 9) & whitepieces(b)
-	// capture can be right (>> 7) and not on H-lane
-	Rightcapture := ((b.BlackPawns & notH_lane) >> 7) & whitepieces(b)
+	// normal push will be quiet move and shift will be 8
+	ExtractBlackPawnmoves(8, normalPush, QuietMove, list)
 
-	// dynamic en passant
-	var LeftEnpassant uint64 = 0
-	var RightEnpassant uint64 = 0
-	if b.EnPassantSquare != -1 {
-		LeftEnpassant = ((b.BlackPawns & notA_lane) >> 7) & (uint64(1)<<uint64(b.EnPassantSquare))
-		RightEnpassant = ((b.BlackPawns & notH_lane) >> 9) & (uint64(1)<<uint64(b.EnPassantSquare))
+	// a pawn can promote into 4 pieces (queen, rook, knight, bishop)
+	for promotions != 0 {
+		toSquare := bits.TrailingZeros64(promotions)
+		fromSquare := toSquare + 8
+		AddMove(list, EncodeMove(uint16(fromSquare), uint16(toSquare), QueenPromo)) // to promote queen
+		AddMove(list, EncodeMove(uint16(fromSquare), uint16(toSquare), RookPromo)) // to promote rook
+		AddMove(list, EncodeMove(uint16(fromSquare), uint16(toSquare), BishopPromo)) // to promote bishop
+		AddMove(list, EncodeMove(uint16(fromSquare), uint16(toSquare), KnightPromo)) // to promote knight
+		promotions &= (promotions - 1)
 	}
 
-	return Singlepush | Doublepush | Leftcapture | Rightcapture | LeftEnpassant | RightEnpassant
+	// 2) double push
+	row5mask := uint64(0x000000FF00000000)
+	doublePush := (Singlepush >> 8) & ^Occupiedsquares(b) & row5mask
+	// extract and add move to list
+	ExtractBlackPawnmoves(16, doublePush, DoublePawnPush, list)
+
+	// 3) left captures
+	Leftcapture := ((b.BlackPawns & notA_lane) >> 9) & whitepieces(b)
+	// 2 types of left capture -> normal capture
+	// 						   -> promo capture
+	normalLeftcapture := Leftcapture & ^rank1mask
+	promoLeftcapture := Leftcapture & rank1mask
+
+	// normal capture
+	ExtractBlackPawnmoves(9, normalLeftcapture, Capture, list)
+
+	// promo captures
+	for promoLeftcapture != 0 {
+		toSquare := bits.TrailingZeros64(promoLeftcapture)
+		fromSquare := toSquare + 9
+		AddMove(list, EncodeMove(uint16(fromSquare), uint16(toSquare), QueenPromoCap)) // to promote queen
+		AddMove(list, EncodeMove(uint16(fromSquare), uint16(toSquare), RookPromoCap)) // to promote rook
+		AddMove(list, EncodeMove(uint16(fromSquare), uint16(toSquare), BishopPromoCap)) // to promote bishop
+		AddMove(list, EncodeMove(uint16(fromSquare), uint16(toSquare), KnightPromoCap)) // to promote knight
+		promoLeftcapture &= (promoLeftcapture - 1)
+	}
+
+	// 4) right captures
+	Rightcapture := ((b.BlackPawns & notH_lane) >> 7) & whitepieces(b)
+	// same as left capture
+	normalRightcapture := Rightcapture & ^rank1mask
+	promoRightcapture := Rightcapture & rank1mask
+
+	ExtractBlackPawnmoves(7, normalRightcapture, Capture, list)
+
+	// promo captures
+	for promoRightcapture != 0 {
+		toSquare := bits.TrailingZeros64(promoRightcapture)
+		fromSquare := toSquare + 7
+		AddMove(list, EncodeMove(uint16(fromSquare), uint16(toSquare), QueenPromoCap)) // to promote queen
+		AddMove(list, EncodeMove(uint16(fromSquare), uint16(toSquare), RookPromoCap)) // to promote rook
+		AddMove(list, EncodeMove(uint16(fromSquare), uint16(toSquare), BishopPromoCap)) // to promote bishop
+		AddMove(list, EncodeMove(uint16(fromSquare), uint16(toSquare), KnightPromoCap)) // to promote knight
+		promoRightcapture &= (promoRightcapture - 1)
+	}
+
+	// 5) en passnat (right or left)
+	if b.EnPassantSquare != -1 {
+		// logic same as old 
+		LeftEnpassant := ((b.BlackPawns & notA_lane) >> 7) & (uint64(1)<<uint64(b.EnPassantSquare))
+		ExtractBlackPawnmoves(7, LeftEnpassant, EpCapture, list)
+
+		RightEnpassant := ((b.BlackPawns & notH_lane) >> 9) & (uint64(1)<<uint64(b.EnPassantSquare))
+		ExtractBlackPawnmoves(9, RightEnpassant, EpCapture, list)
+	}
 }
+// func Blackpawnpush(b board) uint64{
+// 	// single push
+// 	Singlepush := (b.BlackPawns >> 8) & ^Occupiedsquares(b)
+
+// 	// double push
+// 	// row 6 and 5 should be empty
+// 	mask6row := uint64(0x0000FF0000000000)
+// 	Doublepush := ((Singlepush & mask6row) >> 8) & ^Occupiedsquares(b)
+
+// 	// capture
+// 	// capture00 can be left (>> 9) and not on A-lane
+// 	Leftcapture := ((b.BlackPawns & notA_lane) >> 9) & whitepieces(b)
+// 	// capture can be right (>> 7) and not on H-lane
+// 	Rightcapture := ((b.BlackPawns & notH_lane) >> 7) & whitepieces(b)
+
+// 	// dynamic en passant
+// 	var LeftEnpassant uint64 = 0
+// 	var RightEnpassant uint64 = 0
+// 	if b.EnPassantSquare != -1 {
+// 		LeftEnpassant = ((b.BlackPawns & notA_lane) >> 7) & (uint64(1)<<uint64(b.EnPassantSquare))
+// 		RightEnpassant = ((b.BlackPawns & notH_lane) >> 9) & (uint64(1)<<uint64(b.EnPassantSquare))
+// 	}
+
+// 	return Singlepush | Doublepush | Leftcapture | Rightcapture | LeftEnpassant | RightEnpassant
+// }
 
 
 // all possible knight moves

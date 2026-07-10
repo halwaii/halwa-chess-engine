@@ -541,42 +541,8 @@ func LegalKingmoves(b board, square int, isWhite bool) uint64{
 	var finalmoves uint64 = 0
 	if isWhite {
 		finalmoves = rawmoves & ^whitepieces(b)
-		// white castle checking . king must be on e1
-		if square == 4 {
-			//king side castle from e1 -> g1
-			// all the space should be empty
-			if (Occupiedsquares(b) & whiteKingsidemask) == 0 {
-				// and should not be attacked by black piece
-				// e1 , f1, g1 should not be attacked by black
-				if !IsSquareAttacked(4,false,b) && !IsSquareAttacked(5,false,b) && !IsSquareAttacked(6,false,b) {
-					finalmoves |= uint64(1)<<6
-				}
-			}
-			// queen side castle from e1 to c1
-			if (Occupiedsquares(b) & whiteQueensidemask) == 0 {
-				if !IsSquareAttacked(2,false,b) && !IsSquareAttacked(3,false,b) && !IsSquareAttacked(4,false,b){
-					finalmoves |= uint64(1)<<2
-				}
-			}
-		}
 	} else {
 		finalmoves = rawmoves & ^blackpieces(b)
-		// black castling check . king must be on e8
-		if square == 60 {
-			// king side from e8 -> g8
-			if (Occupiedsquares(b) & blackKingsidemask) == 0 {
-				// e8, f8, g8 should not be attacked by white
-				if !IsSquareAttacked(60,true,b) && !IsSquareAttacked(61,true,b) && !IsSquareAttacked(62,true,b) {
-					finalmoves |= uint64(1)<<62
-				}
-			}
-			// queen side from e8 -> c8
-			if (Occupiedsquares(b) & blackQueensidemask) == 0 {
-				if !IsSquareAttacked(58,true,b) && !IsSquareAttacked(59,true,b) && !IsSquareAttacked(60,true,b) {
-					finalmoves |= uint64(1)<<58
-				}
-			}
-		}
 	}
 	return finalmoves
 }
@@ -602,8 +568,45 @@ func allLegalKingmoves(b board, isWhite bool, list *MoveList) {
 		ExtractMoves(fromSquare, quietMove, 0, list)
 		ExtractMoves(fromSquare, captures, 4, list)
 
-		king &= (king - 1)
+	// special moves of king - castling
+	if isWhite{
+		// White King must be on e1 (square 4)
+		if fromSquare == 4 {
+			//king side castle from e1 -> g1
+			// all the space should be empty
+			if (Occupiedsquares(b) & whiteKingsidemask) == 0 {
+				// and should not be attacked by black piece
+				// e1 , f1, g1 should not be attacked by black
+				if !IsSquareAttacked(4,false,b) && !IsSquareAttacked(5,false,b) && !IsSquareAttacked(6,false,b) {
+					AddMove(list, EncodeMove(4,6,2))
+				}
+			}
+			// queen side castle from e1 to c1
+			if (Occupiedsquares(b) & whiteQueensidemask) == 0 {
+				if !IsSquareAttacked(2,false,b) && !IsSquareAttacked(3,false,b) && !IsSquareAttacked(4,false,b){
+					AddMove(list, EncodeMove(4,2,3))
+				}
+			}
+		}
+	} else {
+		// Black King must be on e8 (square 60)
+		if fromSquare == 60 {
+			// 1. Black King-side Castle (e8 -> g8)
+			if (Occupiedsquares(b) & blackKingsidemask) == 0 {
+				if !IsSquareAttacked(60, true, b) && !IsSquareAttacked(61, true, b) && !IsSquareAttacked(62, true, b) {
+					AddMove(list, EncodeMove(60, 62, 2))
+				}
+			}
+			// 2. Black Queen-side Castle (e8 -> c8)
+			if (Occupiedsquares(b) & blackQueensidemask) == 0 {
+				if !IsSquareAttacked(58, true, b) && !IsSquareAttacked(59, true, b) && !IsSquareAttacked(60, true, b) {
+					AddMove(list, EncodeMove(60, 58, 3))
+				}
+			}
+		}
 	}
+	king &= (king - 1)
+}
 	// var allKingmoves uint64 = 0
 	// for square:=0; square<64; square++ {
 	// 	var currKing uint64 = 0;

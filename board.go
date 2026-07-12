@@ -4,6 +4,33 @@ import(
 	"fmt"
 )
 
+// piece indentification to restored capture piece in undo move
+const (
+	Emptypiece = 0
+	Whitepawn = 1
+	WhiteKnight = 2
+	WhiteBishop = 3
+	WhiteRook = 4
+	WhiteQueen = 5
+	WhiteKing = 6
+
+	BlackPawn = 7
+	BlackKnight = 8
+	BlackBishop = 9
+	BlackRook = 10
+	BlackQueen = 11
+	BlackKing = 12
+)
+// instead of making copy of past bitboard
+// we make a struct which carries only important info
+// undostate struct to save past state memory
+type UndoState struct {
+	MoveMade Move // which move is played
+	Capturedpiece int // which piece was captured
+	Enpassantsq int // which was last en passant square
+	CastlingRights uint8 // previous castling rights (KQkq) 0000 1111 
+	HalfMoveClock int // 50 moves draw rule
+}
 // gloabal constants - A_lane and H_lane
 
 // Column:    H1  G1  F1  E1  D1  C1  B1  A1
@@ -42,7 +69,16 @@ type board struct{
 	BlackKnight uint64;
 	BlackRook uint64;
 	// square of last pawn which double pushed
+	// game state variables
 	EnPassantSquare int
+	CastlingRights uint8
+	HalfMoveClock int
+
+	// undo stack
+	history []UndoState
+
+	// this will tell whose move is it
+	WhiteToMove bool
 }
 
 func Occupiedsquares(b board) uint64{

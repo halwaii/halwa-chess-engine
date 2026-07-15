@@ -622,20 +622,22 @@ func allLegalKingmoves(b board, isWhite bool, list *MoveList) {
 	// return allKingmoves
 }
 func isinCheck(b board, isWhite bool) bool{
-	var kingSquare int
+
 	var kingBitboard uint64 = 0
 	if isWhite {
 		kingBitboard = b.WhiteKing
 	} else {
 		kingBitboard = b.BlackKing
 	}
-	// we find find square of that particular king
-	for square :=0; square<64; square++ {
-		if (kingBitboard & (uint64(1)<<uint64(square))) != 0 {
-			kingSquare = square
-			break
-		}
-	}
+	// finding kings square without loop
+	kingSquare := bits.TrailingZeros64(kingBitboard)
+	// // we find find square of that particular king
+	// for square :=0; square<64; square++ {
+	// 	if (kingBitboard & (uint64(1)<<uint64(square))) != 0 {
+	// 		kingSquare = square
+	// 		break
+	// 	}
+	// }
 	// if white is in check then it should be attacked by black piece
 	// so !isWhite kiya
 	return IsSquareAttacked(kingSquare, !isWhite, b)

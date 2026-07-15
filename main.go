@@ -1,5 +1,8 @@
 package main
-
+import(
+	"fmt"
+	"time"
+)
 func main(){
 	// var myMove Move = EncodeMove(12, 28, 0)
 	// fmt.Println("pawn moves from e2(12) to e4(28) : \n")
@@ -22,8 +25,13 @@ func main(){
 	b.BlackKnight = 0x4200000000000000
 	b.BlackQueen = 0x0800000000000000
 
-	Printboard(b)
-
+	//Printboard(b)
+	
+	startTime := time.Now()
+	nodes := Perft(&b, 3)
+	timeTaken := time.Since(startTime)
+	fmt.Printf("total nodes : %d \n", nodes)
+	fmt.Printf("total time taken : %v \n", timeTaken)
 	// b.WhiteQueen = uint64(1) << 28
 	// b.BlackPawns = uint64(1) << 46
 	// fmt.Println("\nwhite queen legal moves(d4) and a blackpiece at g6 : \n")

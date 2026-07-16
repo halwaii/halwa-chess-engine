@@ -574,6 +574,10 @@ func allLegalKingmoves(b board, isWhite bool, list *MoveList) {
 		if fromSquare == 4 {
 			//king side castle from e1 -> g1
 			// all the space should be empty
+			
+			// forgot to check white has king-side castling rights
+
+			if (b.CastlingRights & 1) != 0 {
 			if (Occupiedsquares(b) & whiteKingsidemask) == 0 {
 				// and should not be attacked by black piece
 				// e1 , f1, g1 should not be attacked by black
@@ -581,28 +585,36 @@ func allLegalKingmoves(b board, isWhite bool, list *MoveList) {
 					AddMove(list, EncodeMove(4,6,2))
 				}
 			}
+			}
+			// forgot to check white has queen side castling rights
+			if (b.CastlingRights & 2) != 0{
 			// queen side castle from e1 to c1
 			if (Occupiedsquares(b) & whiteQueensidemask) == 0 {
 				if !IsSquareAttacked(2,false,b) && !IsSquareAttacked(3,false,b) && !IsSquareAttacked(4,false,b){
 					AddMove(list, EncodeMove(4,2,3))
 				}
 			}
+			}
 		}
 	} else {
 		// Black King must be on e8 (square 60)
 		if fromSquare == 60 {
+			if (b.CastlingRights & 4) != 0 {
 			// 1. Black King-side Castle (e8 -> g8)
 			if (Occupiedsquares(b) & blackKingsidemask) == 0 {
 				if !IsSquareAttacked(60, true, b) && !IsSquareAttacked(61, true, b) && !IsSquareAttacked(62, true, b) {
 					AddMove(list, EncodeMove(60, 62, 2))
 				}
 			}
+			}
+			if (b.CastlingRights & 8) != 0 {
 			// 2. Black Queen-side Castle (e8 -> c8)
 			if (Occupiedsquares(b) & blackQueensidemask) == 0 {
 				if !IsSquareAttacked(58, true, b) && !IsSquareAttacked(59, true, b) && !IsSquareAttacked(60, true, b) {
 					AddMove(list, EncodeMove(60, 58, 3))
 				}
 			}
+		}
 		}
 	}
 	king &= (king - 1)

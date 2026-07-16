@@ -1,5 +1,5 @@
 package main
-
+import "fmt"
 // perft func -> counts all leaf nodes upto certain depths
 
 // base case if depth == 0 return 1
@@ -43,4 +43,28 @@ func Perft(b *board, depth int) uint64{
 		UnMakeMove(b)
 	}
 	return nodes
+}
+
+// perftDivide -> debugging tool 
+// which will print 1st move and its further total nodes
+func perftDivide(b *board, depth int){
+	if depth == 0 {
+		return 
+	}
+	var total uint64 = 0
+	var list MoveList
+	GenerateAllMoves(b, &list)
+	for i:=0; i < len(list.Moves);i++{
+		move := list.Moves[i]
+		MakeMove(b, move)
+		whomoved := !b.WhiteToMove
+		if !isinCheck(*b, whomoved){
+			nodes := Perft(b,depth-1)
+			total += nodes
+			// all legal moves and its further nodes will be printed
+			fmt.Printf("move id %d -> nodes : %d\n",move, nodes)
+		}
+		UnMakeMove(b)
+	}
+	fmt.Printf("\ntotal nodes for depth %d : %d\n", depth, total)
 }

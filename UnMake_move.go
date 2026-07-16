@@ -55,11 +55,19 @@ func UnMakeMove(b *board){
 		capturedSquare := to
 
 		// enpassant speical
-		if b.WhiteToMove {
-			capturedSquare = to - 8 // black pawn was 1 row behind
-		} else {
-			capturedSquare = to + 8 // white pawn was 1 row above
+		if flag == EpCapture {
+			if b.WhiteToMove {
+				capturedSquare = to - 8 // black pawn was 1 row behind
+			} else {
+				capturedSquare = to + 8 // white pawn was 1 row above
+			}
 		}
+		// bug bug bug
+		// if b.WhiteToMove {
+		// 	capturedSquare = to - 8 // black pawn was 1 row behind
+		// } else {
+		// 	capturedSquare = to + 8 // white pawn was 1 row above
+		// }
 		// add the piece where it was captured
 		AddPiece(b, state.Capturedpiece, capturedSquare)
 	}

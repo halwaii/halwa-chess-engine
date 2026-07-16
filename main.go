@@ -28,8 +28,10 @@ func main(){
 	//Printboard(b)
 	
 	startTime := time.Now()
-	perftDivide(&b, 3)
+	nodes := Perft(&b, 6)
+	//perftDivide(&b, 6)
 	timeTaken := time.Since(startTime)
+	fmt.Printf("total nodes for depth 6 : %v \n", nodes)
 	fmt.Printf("total time taken : %v \n", timeTaken)
 	// b.WhiteQueen = uint64(1) << 28
 	// b.BlackPawns = uint64(1) << 46

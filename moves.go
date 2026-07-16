@@ -194,10 +194,13 @@ func BlackPawnmoves(b board, list *MoveList){
 	// 5) en passnat (right or left)
 	if b.EnPassantSquare != -1 {
 		// logic same as old 
-		LeftEnpassant := ((b.BlackPawns & notA_lane) >> 7) & (uint64(1)<<uint64(b.EnPassantSquare))
+		// fuck copy paste T_T 
+		// copy pasted same as white pawn logic
+		// swap 7 and 9
+		LeftEnpassant := ((b.BlackPawns & notA_lane) >> 9) & (uint64(1)<<uint64(b.EnPassantSquare))
 		ExtractBlackPawnmoves(7, LeftEnpassant, EpCapture, list)
 
-		RightEnpassant := ((b.BlackPawns & notH_lane) >> 9) & (uint64(1)<<uint64(b.EnPassantSquare))
+		RightEnpassant := ((b.BlackPawns & notH_lane) >> 7) & (uint64(1)<<uint64(b.EnPassantSquare))
 		ExtractBlackPawnmoves(9, RightEnpassant, EpCapture, list)
 	}
 }

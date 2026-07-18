@@ -10,29 +10,44 @@ func main(){
 	// fmt.Println("From Square:", myMove.GetFrom())
 	// fmt.Println("To Square:", myMove.GetTo())
 	// fmt.Println("Move Flag:", myMove.GetFlag())
+
 	var b board
-	b.WhitePawns = 0x000000000000FF00
-	b.WhiteKing = 0x0000000000000010
-	b.WhiteQueen = 0x0000000000000008
-	b.WhiteBishop = 0x0000000000000024 
-	b.WhiteKnight = 0x0000000000000042
-	b.WhiteRook = 0x0000000000000081
+	// b.WhitePawns = 0x000000000000FF00
+	// b.WhiteKing = 0x0000000000000010
+	// b.WhiteQueen = 0x0000000000000008
+	// b.WhiteBishop = 0x0000000000000024 
+	// b.WhiteKnight = 0x0000000000000042
+	// b.WhiteRook = 0x0000000000000081
 	
-	b.BlackPawns = 0x00FF000000000000
-	b.BlackKing = 0x1000000000000000
-	b.BlackRook = 0x8100000000000000
-	b.BlackBishop = 0x2400000000000000
-	b.BlackKnight = 0x4200000000000000
-	b.BlackQueen = 0x0800000000000000
+	// b.BlackPawns = 0x00FF000000000000
+	// b.BlackKing = 0x1000000000000000
+	// b.BlackRook = 0x8100000000000000
+	// b.BlackBishop = 0x2400000000000000
+	// b.BlackKnight = 0x4200000000000000
+	// b.BlackQueen = 0x0800000000000000
 
 	//Printboard(b)
 	
+	// fen testing ->
+	fen := "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1"
+	ParserFEN(&b, fen)
+	Printboard(b)
+	// perft
 	startTime := time.Now()
-	nodes := Perft(&b, 6)
-	//perftDivide(&b, 6)
+	nodes := Perft(&b, 3)
 	timeTaken := time.Since(startTime)
-	fmt.Printf("total nodes for depth 6 : %v \n", nodes)
-	fmt.Printf("total time taken : %v \n", timeTaken)
+	fmt.Printf("\nTotal nodes for Kiwipete Depth 3: %v \n", nodes)
+	fmt.Printf("Total time taken: %v \n", timeTaken)
+
+	// perft nodes calculation
+
+	// startTime := time.Now()
+	// nodes := Perft(&b, 6)
+	// //perftDivide(&b, 6)
+	// timeTaken := time.Since(startTime)
+	// fmt.Printf("total nodes for depth 6 : %v \n", nodes)
+	// fmt.Printf("total time taken : %v \n", timeTaken)
+
 	// b.WhiteQueen = uint64(1) << 28
 	// b.BlackPawns = uint64(1) << 46
 	// fmt.Println("\nwhite queen legal moves(d4) and a blackpiece at g6 : \n")

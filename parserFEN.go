@@ -14,7 +14,7 @@ import(
 // it starts from top left of board
 // / 		-> represents new rank
 // numbers 	-> show empty space
-// ' ' 		-> empty space shows position is ended
+// ' ' 		-> empty space shows new part is started
 // w / b 	-> shows whose turn is it
 // KQkq 	-> shows castling rights
 // '-' 		-> shows enpassnt square

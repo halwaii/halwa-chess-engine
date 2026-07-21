@@ -15,6 +15,14 @@ func Perft(b *board, depth int) uint64{
 		return 1
 	}
 
+	// check if this position already existed before at same depth
+	if entry, exists := TranspositionTable[b.HashKey]; exists{
+		if entry.Depth == depth{
+			// return total nodes instantly instantly 
+			return entry.Nodes
+		}
+	}
+
 	var nodes uint64 = 0
 
 	// 1) generate moves for current board
@@ -41,6 +49,12 @@ func Perft(b *board, depth int) uint64{
 		}
 		// 5) unmake move
 		UnMakeMove(b)
+	}
+
+	// before returning save the result in the table
+	TranspositionTable[b.HashKey] = TTEntry{
+		Depth: depth,
+		Nodes: nodes,
 	}
 	return nodes
 }

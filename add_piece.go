@@ -35,4 +35,7 @@ func AddPiece(b *board, piece int, square int){
 	case BlackKing:
 		b.BlackKing |= mask
 	}
+
+	// new : add the piece to our hash using XOR
+	b.HashKey ^= ZobristPieces[piece][square]
 }

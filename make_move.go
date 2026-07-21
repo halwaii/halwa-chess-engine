@@ -2,6 +2,15 @@ package main
 
 // make move
 func MakeMove (b *board, move Move){
+
+	// 1* remove old board state
+	if b.EnPassantSquare != -1{
+		b.HashKey ^= ZobristEnpassant[b.EnPassantSquare % 8]
+	}
+	b.HashKey ^= ZobristTurn
+	b.HashKey ^= ZobristCastling[b.CastlingRights]
+	// as for pieces we have already done them in add piece 
+	// and remove pice ;)
 	
 	// 1) decode the move
 	from := int(GetFrom(move))
@@ -136,4 +145,11 @@ func MakeMove (b *board, move Move){
 	// lastly T_T
 	// toggle to tell whose move is it next
 	b.WhiteToMove = !b.WhiteToMove
+
+	// 2* add new board state in our hash
+	if b.EnPassantSquare != -1{
+		b.HashKey ^= ZobristEnpassant[b.EnPassantSquare%8]
+	}
+	b.HashKey ^= ZobristTurn
+	b.HashKey ^= ZobristCastling[b.CastlingRights]
 }

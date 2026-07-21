@@ -35,4 +35,7 @@ func RemovePiece(b *board, piece int, square int){
 	case BlackKing:
 		b.BlackKing &= ^mask
 	}
+
+	// new : if we XOR again , we can remove it the hash
+	b.HashKey ^= ZobristPieces[piece][square]
 }

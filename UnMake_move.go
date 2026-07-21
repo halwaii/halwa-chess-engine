@@ -8,6 +8,13 @@ package main
 // 6) reverse castling
 func UnMakeMove(b *board){
 
+	// 1* remove current board state
+	if b.EnPassantSquare != -1{
+		b.HashKey ^= ZobristEnpassant[b.EnPassantSquare%8]
+	}
+	b.HashKey ^= ZobristTurn
+	b.HashKey ^= ZobristCastling[b.CastlingRights]
+
 	// 1) save the last position from history and pop it
 	lastIndex := len(b.history) - 1
 	state := b.history[lastIndex]
@@ -94,4 +101,11 @@ func UnMakeMove(b *board){
 			}
 		}
 	}
+
+	// 2* add new board state in our hash
+	if b.EnPassantSquare != -1{
+		b.HashKey ^= ZobristEnpassant[b.EnPassantSquare%8]
+	}
+	b.HashKey ^= ZobristTurn
+	b.HashKey ^= ZobristCastling[b.CastlingRights]
 }

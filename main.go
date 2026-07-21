@@ -29,14 +29,19 @@ func main(){
 	//Printboard(b)
 	
 	// fen testing ->
-	fen := "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1"
-	ParserFEN(&b, fen)
-	Printboard(b)
+	fen := "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+	InitZobrist()					// 1) dictionary of random numbers
+	// initialise new map
+	TranspositionTable = make(map[uint64]TTEntry, 1000000)
+	ParserFEN(&b, fen) 				// 2) set board pieces using fen string
+	b.HashKey = GenerateHash(&b)    // 3) now make hash of board
+	fmt.Printf("initial zobrist hash : 0x%v\n", b.HashKey)
+	// Printboard(b)
 	// perft
 	startTime := time.Now()
-	nodes := Perft(&b, 3)
+	nodes := Perft(&b, 6)
 	timeTaken := time.Since(startTime)
-	fmt.Printf("\nTotal nodes for Kiwipete Depth 3: %v \n", nodes)
+	fmt.Printf("\nTotal nodes for Kiwipete Depth 6 : %v \n", nodes)
 	fmt.Printf("Total time taken: %v \n", timeTaken)
 
 	// perft nodes calculation

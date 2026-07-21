@@ -79,6 +79,9 @@ type board struct{
 
 	// this will tell whose move is it
 	WhiteToMove bool
+
+	// hashkey 
+	HashKey uint64
 }
 
 func Occupiedsquares(b board) uint64{

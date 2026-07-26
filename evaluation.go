@@ -19,7 +19,7 @@ const(
 	BishopVal = 320
 	RookVal = 500
 	QueenVal = 900
-	KingVal = 50000
+	KingVal = 20000
 )
 
 // PST -> every piece on every square has a specific bonus or penalty

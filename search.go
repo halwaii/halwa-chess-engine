@@ -1,5 +1,9 @@
 package main
 
+import (
+	"sort"
+)
+
 // maximum and minimum score
 const(
 	infinity = 50000
@@ -21,11 +25,32 @@ func Search(b *board, depth int, alpha int, beta int) int{
 	var list MoveList
 	GenerateAllMoves(b, &list)
 
+	// move ordering should be before doing dfs
+	// creating a new slice to store moves and its score
+	type ScoredMove struct{
+		move Move
+		score int
+	}
+	// allocating memory and calculating scores
+	// we use "make" for it
+	scoredMoves := make([]ScoredMove, len(list.Moves))
+	for i:=0;i<len(list.Moves);i++{
+		scoredMoves[i] = ScoredMove{
+			move: list.Moves[i],
+			score: ScoreMoves(b, list.Moves[i]),
+		}
+	}
+
+	// sort the slice in descending order
+	sort.Slice(scoredMoves, func(i,j int)bool{
+		return scoredMoves[i].score>scoredMoves[j].score
+	})
+
 	// count legal moves
 	LegalMovesCount := 0
 	// loop through all moves
 	for i:=0;i<len(list.Moves);i++{
-		move := list.Moves[i]
+		move := scoredMoves[i].move // update here
 		// make move
 		MakeMove(b, move)
 

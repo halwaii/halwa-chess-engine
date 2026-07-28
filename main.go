@@ -39,9 +39,11 @@ func main(){
 	// Printboard(b)
 	// perft
 	startTime := time.Now()
-	nodes := Perft(&b, 5)
+	bestScore := Search(&b, 6, -50000,50000)
+	//nodes := Perft(&b, 5)
 	timeTaken := time.Since(startTime)
-	fmt.Printf("\nTotal nodes for Depth 5 : %v \n", nodes)
+	//fmt.Printf("\nTotal nodes for Depth 5 : %v \n", nodes)
+	fmt.Printf("Best Evaluation Score : %v cp \n", bestScore)
 	fmt.Printf("Total time taken: %v \n", timeTaken)
 
 	// perft nodes calculation

@@ -4,7 +4,7 @@ import (
 	"math/bits"
 )
 
-func WhitePawnmoves(b board, list *MoveList){
+func WhitePawnmoves(b board, list *MoveList, onlyCaptures bool){
 
 	// 1) single push (shift + 8)
 	Singlepush := (b.WhitePawns << 8) & ^Occupiedsquares(b)
@@ -18,7 +18,9 @@ func WhitePawnmoves(b board, list *MoveList){
 	promotions := Singlepush & rank8mask
 
 	// normal push will be quiet move and shift will be 8
+	if !onlyCaptures{
 	ExtractWhitePawnmoves(8, normalPush, QuietMove, list)
+	}
 
 	// a pawn can promote into 4 pieces (queen, rook, knight, bishop)
 	for promotions != 0 {
@@ -35,7 +37,9 @@ func WhitePawnmoves(b board, list *MoveList){
 	row4mask := uint64(0x00000000FF000000)
 	doublePush := (Singlepush << 8) & ^Occupiedsquares(b) & row4mask
 	// extract and add move to list
+	if !onlyCaptures{
 	ExtractWhitePawnmoves(16, doublePush, DoublePawnPush, list)
+	}
 
 	// 3) left captures
 	Leftcapture := ((b.WhitePawns & notA_lane) << 7) & blackpieces(b)
@@ -118,7 +122,7 @@ func WhitePawnmoves(b board, list *MoveList){
 // 	return Singlepush | Doublepush | Leftcapture | Rightcapture | LeftEnpassant | RightEnpassant
 // }
 
-func BlackPawnmoves(b board, list *MoveList){
+func BlackPawnmoves(b board, list *MoveList, onlyCaptures bool){
 
 	// 1) single push (shift + 8)
 	Singlepush := (b.BlackPawns >> 8) & ^Occupiedsquares(b)
@@ -132,7 +136,9 @@ func BlackPawnmoves(b board, list *MoveList){
 	promotions := Singlepush & rank1mask
 
 	// normal push will be quiet move and shift will be 8
+	if !onlyCaptures{
 	ExtractBlackPawnmoves(8, normalPush, QuietMove, list)
+	}
 
 	// a pawn can promote into 4 pieces (queen, rook, knight, bishop)
 	for promotions != 0 {
@@ -149,7 +155,9 @@ func BlackPawnmoves(b board, list *MoveList){
 	row5mask := uint64(0x000000FF00000000)
 	doublePush := (Singlepush >> 8) & ^Occupiedsquares(b) & row5mask
 	// extract and add move to list
+	if !onlyCaptures{
 	ExtractBlackPawnmoves(16, doublePush, DoublePawnPush, list)
+	}
 
 	// 3) left captures
 	Leftcapture := ((b.BlackPawns & notA_lane) >> 9) & whitepieces(b)
@@ -280,7 +288,7 @@ func LegalKnightmoves(b board, square int, isWhite bool) uint64{
 
 // now we will find moves for "each knight" so that we can
 // store "fromSquare"
-func allLegalKnightmoves(b board, isWhite bool, list *MoveList) {
+func allLegalKnightmoves(b board, isWhite bool, list *MoveList, onlyCaptures bool) {
 	var knights uint64 = 0
 	// make new bitboard of enemyPieces
 	var enemyPieces uint64 = 0
@@ -307,7 +315,11 @@ func allLegalKnightmoves(b board, isWhite bool, list *MoveList) {
 		// 3) now we will extract moves and add to our list from this particular square
 		// flag is set 0 as of n ow(will update it)
 		// 0 for quiet move
-		ExtractMoves(fromSquare, quietMove, 0, list)
+
+		// if we want no captures
+		if !onlyCaptures{
+			ExtractMoves(fromSquare, quietMove, 0, list)
+		}
 		// 4 for capture
 		ExtractMoves(fromSquare, captures, 4, list)
 		// 4) we will remove current knight and move to next
@@ -384,7 +396,7 @@ func LegalRookmoves(b board, square int, isWhite bool) uint64{
 	}
 }
 // find squares where rooks are present
-func allLegalRookmoves(b board, isWhite bool, list *MoveList) {
+func allLegalRookmoves(b board, isWhite bool, list *MoveList, onlyCaptures bool) {
 
 	var rooks uint64 = 0
 	var enemyPieces uint64 = 0
@@ -404,7 +416,9 @@ func allLegalRookmoves(b board, isWhite bool, list *MoveList) {
 		captures := RookMovesbitboard & enemyPieces
 		quietMove := RookMovesbitboard & ^enemyPieces
 
+		if !onlyCaptures{
 		ExtractMoves(fromSquare, quietMove, 0, list)
+		}
 		ExtractMoves(fromSquare, captures, 4, list)
 
 		rooks &= (rooks - 1)
@@ -437,7 +451,7 @@ func LegalBishopmoves(b board, square int, isWhite bool) uint64{
 		return rawmoves & ^blackpieces(b)
 	}
 }
-func allLegalBishopmoves(b board, isWhite bool, list *MoveList) {
+func allLegalBishopmoves(b board, isWhite bool, list *MoveList, onlyCaptures bool) {
 	var bishops uint64 = 0
 	var enemyPieces uint64 = 0
 	if isWhite{
@@ -456,7 +470,9 @@ func allLegalBishopmoves(b board, isWhite bool, list *MoveList) {
 		captures := BishopMovesbitboard & enemyPieces
 		quietMove := BishopMovesbitboard & ^enemyPieces
 
+		if !onlyCaptures{
 		ExtractMoves(fromSquare, quietMove, 0, list)
+		}
 		ExtractMoves(fromSquare, captures, 4, list)
 
 		bishops &= (bishops - 1)
@@ -477,7 +493,7 @@ func allLegalBishopmoves(b board, isWhite bool, list *MoveList) {
 }
 // queen = bishop + rook
 // it can move in 8 directions
-func allLegalQueenmoves(b board, isWhite bool, list *MoveList) {
+func allLegalQueenmoves(b board, isWhite bool, list *MoveList, onlyCaptures bool) {
 	var queen uint64 = 0
 	var enemyPieces uint64 = 0
 	if isWhite{
@@ -496,7 +512,9 @@ func allLegalQueenmoves(b board, isWhite bool, list *MoveList) {
 		captures := QueenMovesbitboard & enemyPieces
 		quietMove := QueenMovesbitboard & ^enemyPieces
 
+		if !onlyCaptures{
 		ExtractMoves(fromSquare, quietMove, 0, list)
+		}
 		ExtractMoves(fromSquare, captures, 4, list)
 
 		queen &= (queen - 1)
@@ -549,7 +567,7 @@ func LegalKingmoves(b board, square int, isWhite bool) uint64{
 	}
 	return finalmoves
 }
-func allLegalKingmoves(b board, isWhite bool, list *MoveList) {
+func allLegalKingmoves(b board, isWhite bool, list *MoveList, onlyCaptures bool) {
 	var king uint64 = 0
 	var enemyPieces uint64 = 0
 	if isWhite{
@@ -568,11 +586,14 @@ func allLegalKingmoves(b board, isWhite bool, list *MoveList) {
 		captures := KingMovesbitboard & enemyPieces
 		quietMove := KingMovesbitboard & ^enemyPieces
 
+		if !onlyCaptures{
 		ExtractMoves(fromSquare, quietMove, 0, list)
+		}
 		ExtractMoves(fromSquare, captures, 4, list)
 
 	// special moves of king - castling
 	if isWhite{
+		if !onlyCaptures{
 		// White King must be on e1 (square 4)
 		if fromSquare == 4 {
 			//king side castle from e1 -> g1
@@ -599,8 +620,10 @@ func allLegalKingmoves(b board, isWhite bool, list *MoveList) {
 			}
 			}
 		}
+		}
 	} else {
 		// Black King must be on e8 (square 60)
+		if !onlyCaptures{
 		if fromSquare == 60 {
 			if (b.CastlingRights & 4) != 0 {
 			// 1. Black King-side Castle (e8 -> g8)
@@ -619,6 +642,7 @@ func allLegalKingmoves(b board, isWhite bool, list *MoveList) {
 			}
 		}
 		}
+	}
 	}
 	king &= (king - 1)
 }

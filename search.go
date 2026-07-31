@@ -16,7 +16,7 @@ const(
 func Search(b *board, depth int, alpha int, beta int) int{
 	// if depth = 0 then evaluate the score of current board
 	if depth == 0{
-		return Evaluate(b)
+		return QuiescenceSearch(b, alpha, beta)
 	}
 	// maximum starts from negative infinity
 	bestscore := neginfinity

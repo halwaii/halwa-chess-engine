@@ -10,18 +10,43 @@ func GenerateAllMoves(b *board, list *MoveList){
 
 	if b.WhiteToMove{
 		// call all legal moves generation function
-		WhitePawnmoves(*b, list)
-		allLegalKnightmoves(*b, true, list)
-		allLegalBishopmoves(*b, true, list)
-		allLegalRookmoves(*b, true, list)
-		allLegalQueenmoves(*b, true, list)
-		allLegalKingmoves(*b, true, list)
+		WhitePawnmoves(*b, list, false)
+		allLegalKnightmoves(*b, true, list, false)
+		allLegalBishopmoves(*b, true, list, false)
+		allLegalRookmoves(*b, true, list, false)
+		allLegalQueenmoves(*b, true, list, false)
+		allLegalKingmoves(*b, true, list, false)
 	} else {
-		BlackPawnmoves(*b, list)
-		allLegalKnightmoves(*b, false, list)
-		allLegalBishopmoves(*b, false, list)
-		allLegalRookmoves(*b, false, list)
-		allLegalQueenmoves(*b, false, list)
-		allLegalKingmoves(*b, false, list)
+		BlackPawnmoves(*b, list, false)
+		allLegalKnightmoves(*b, false, list, false)
+		allLegalBishopmoves(*b, false, list, false)
+		allLegalRookmoves(*b, false, list, false)
+		allLegalQueenmoves(*b, false, list, false)
+		allLegalKingmoves(*b, false, list, false)
+	}
+}
+
+func GenerateCapturesOnly(b *board, list *MoveList){
+	// same as generate all moves 
+	// just add true for captures only 
+	// before generating new moves the list should be empty
+	list.count = 0
+	list.Moves = nil
+
+	if b.WhiteToMove{
+		// call all legal moves generation function
+		WhitePawnmoves(*b, list, true)
+		allLegalKnightmoves(*b, true, list, true)
+		allLegalBishopmoves(*b, true, list, true)
+		allLegalRookmoves(*b, true, list, true)
+		allLegalQueenmoves(*b, true, list, true)
+		allLegalKingmoves(*b, true, list, true)
+	} else {
+		BlackPawnmoves(*b, list, true)
+		allLegalKnightmoves(*b, false, list, true)
+		allLegalBishopmoves(*b, false, list, true)
+		allLegalRookmoves(*b, false, list, true)
+		allLegalQueenmoves(*b, false, list, true)
+		allLegalKingmoves(*b, false, list, true)
 	}
 }

@@ -14,6 +14,26 @@ const(
 // alpha -> my best case
 // beta -> opponents best case
 func Search(b *board, depth int, alpha int, beta int) int{
+
+	// alpha keeps changing, so we store it in TT
+	// 1) store original alpha to decide flag in TT
+	ogAlpha := alpha
+
+	// 2) TT read
+	if entry, found := TranspositionTable[b.HashKey];found{
+		// use cache only when old depth is bigger than curr 
+		if entry.Depth >= depth{
+			if entry.Flag == Exactflag{
+				return entry.Score // return exact score
+			}
+			if entry.Flag == Alphaflag && entry.Score <= alpha{
+				return alpha // upper bound prune
+			}
+			if entry.Flag == Betaflag && entry.Flag >= beta{
+				return beta // lower bound prune
+			}
+		}
+	}
 	// if depth = 0 then evaluate the score of current board
 	if depth == 0{
 		return QuiescenceSearch(b, alpha, beta)
@@ -96,6 +116,18 @@ func Search(b *board, depth int, alpha int, beta int) int{
 		}
 		// if not in check but there are no legal moves -> STALEMATE
 		return  0
+	}
+	// 3) TT write
+	flag := Exactflag // let exact flag be default
+	if bestscore<= ogAlpha{
+		flag = Alphaflag 
+	} else if bestscore >= beta{
+		flag = Betaflag
+	}
+	TranspositionTable[b.HashKey] = TTEntry{
+		Depth: depth,
+		Score: bestscore,
+		Flag: flag,
 	}
 	return bestscore
 }

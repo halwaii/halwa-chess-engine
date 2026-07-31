@@ -9,9 +9,17 @@ package main
 // 2) depth
 // 3) nodes 
 
+// TT flags to know what kind of score we stored
+const (
+	Exactflag=0 // perfect score
+	Alphaflag = 1 // upper bound (engine failed to bring good score)
+	Betaflag = 2 // lower bound (engine got beta cut off)
+)
 // define TT
 type TTEntry struct{
 	Depth int
+	Score int
+	Flag int
 	Nodes uint64
 }
 

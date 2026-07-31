@@ -38,13 +38,21 @@ func main(){
 	fmt.Printf("initial zobrist hash : 0x%v\n", b.HashKey)
 	// Printboard(b)
 	// perft
+
+	// iterative deepening loop
 	startTime := time.Now()
-	bestScore := Search(&b, 6, -50000,50000)
+	 var bestScore int
+
+	for d:=1;d<=6;d++{
+		bestScore = Search(&b, d, -50000,50000)
+		timeTaken := time.Since(startTime)
+		fmt.Printf("depth %d , Score: %d , time so far: %v\n",d,bestScore,timeTaken)
+	}
 	//nodes := Perft(&b, 5)
-	timeTaken := time.Since(startTime)
+	
 	//fmt.Printf("\nTotal nodes for Depth 5 : %v \n", nodes)
-	fmt.Printf("Best Evaluation Score : %v cp \n", bestScore)
-	fmt.Printf("Total time taken: %v \n", timeTaken)
+	fmt.Printf("\nFinal Best Evaluation Score : %v cp \n", bestScore)
+	fmt.Printf("Total time taken for depth 6 : %v \n", time.Since(startTime))
 
 	// perft nodes calculation
 

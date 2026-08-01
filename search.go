@@ -19,8 +19,14 @@ func Search(b *board, depth int, alpha int, beta int) int{
 	// 1) store original alpha to decide flag in TT
 	ogAlpha := alpha
 
+	// 1* create variable of to hash beste move
+	var hashMove Move
 	// 2) TT read
 	if entry, found := TranspositionTable[b.HashKey];found{
+
+		// 2* save old best move from cache
+		hashMove = entry.BestMove
+
 		// use cache only when old depth is bigger than curr 
 		if entry.Depth >= depth{
 			if entry.Flag == Exactflag{
@@ -55,9 +61,19 @@ func Search(b *board, depth int, alpha int, beta int) int{
 	// we use "make" for it
 	scoredMoves := make([]ScoredMove, len(list.Moves))
 	for i:=0;i<len(list.Moves);i++{
+
+		// normal evaluation
+		moveScore := ScoreMoves(b, list.Moves[i])
+
+		// if this move was caches best move , then give it godly score
+		if list.Moves[i] == hashMove{
+			// so that it becomes top move when sorted 
+			// and alpha beta pruning will do its work
+			moveScore = 10000000
+		}
 		scoredMoves[i] = ScoredMove{
 			move: list.Moves[i],
-			score: ScoreMoves(b, list.Moves[i]),
+			score: moveScore,
 		}
 	}
 
@@ -68,6 +84,11 @@ func Search(b *board, depth int, alpha int, beta int) int{
 
 	// count legal moves
 	LegalMovesCount := 0
+
+	// save the new BestMove
+	// to track curr best move
+	var currBestMove Move
+
 	// loop through all moves
 	for i:=0;i<len(list.Moves);i++{
 		move := scoredMoves[i].move // update here
@@ -94,6 +115,7 @@ func Search(b *board, depth int, alpha int, beta int) int{
 		// update the new score if it is better than last
 		if score > bestscore{
 			bestscore = score
+			currBestMove = move
 		}
 
 		// update alpha
@@ -128,6 +150,7 @@ func Search(b *board, depth int, alpha int, beta int) int{
 		Depth: depth,
 		Score: bestscore,
 		Flag: flag,
+		BestMove: currBestMove,
 	}
 	return bestscore
 }

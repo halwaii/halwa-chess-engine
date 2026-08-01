@@ -21,6 +21,7 @@ type TTEntry struct{
 	Score int
 	Flag int
 	Nodes uint64
+	BestMove Move
 }
 
 // declare a global hashmap whose key will be 64 bit zobrist hash

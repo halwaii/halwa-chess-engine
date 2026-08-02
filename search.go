@@ -35,7 +35,7 @@ func Search(b *board, depth int, alpha int, beta int) int{
 			if entry.Flag == Alphaflag && entry.Score <= alpha{
 				return alpha // upper bound prune
 			}
-			if entry.Flag == Betaflag && entry.Flag >= beta{
+			if entry.Flag == Betaflag && entry.Score >= beta{
 				return beta // lower bound prune
 			}
 		}

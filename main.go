@@ -70,7 +70,7 @@ func UCILoop(){
 		command := strings.TrimSpace(reader.Text())
 		// tokenization of string
 		// "go depth 5" = ["go","depth","5"]
-		tokens := strings.Split(command," ")
+		tokens := strings.Fields(command)
 
 		// to ignore empty enter
 		if len(tokens) == 0{
@@ -124,6 +124,8 @@ func UCILoop(){
 					parsedMove := UCIstringToMove(&b, tokens[i])
 					if parsedMove!=0{
 						MakeMove(&b, parsedMove)
+					} else {
+						fmt.Println("info string ERROR: Move not found or illegal ->", tokens[i])
 					}
 				}
 			}

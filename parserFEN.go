@@ -24,7 +24,7 @@ import(
 // string.Split() -> makes an array of strings
 // and then solve individually for each part
 func ParserFEN(b *board, fen string){
-
+	*b = board{}
 	// we will seperate where there is space
 	parts := strings.Split(fen," ")
 

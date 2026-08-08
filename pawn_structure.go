@@ -27,8 +27,8 @@ func init(){
 	}
 }
 // indexed by rank
-var passedPawnMG = [8]int{0, 5, 10, 15, 25, 40, 60, 0}
-var passedPawnEG = [8]int{0, 10, 25, 40, 65, 100, 150, 0}
+var passedPawnBonusMG = [8]int{0, 5, 10, 15, 25, 40, 60, 0}
+var passedPawnBonusEG = [8]int{0, 10, 25, 40, 65, 100, 150, 0}
 
 func evalPawn(ownPawns uint64, enemyPawns uint64, isWhite bool) (int, int) {
 	mg, eg := 0, 0
@@ -83,6 +83,36 @@ func evalPawn(ownPawns uint64, enemyPawns uint64, isWhite bool) (int, int) {
 				eg += supportedPawnEG
 			}
 		}
+		// passed pawn
+		// checks if there is no enemy pawn on same file and adjacent files
+		// creates a mask to check enemy pawns
+		var frontSpan uint64
+		step := 1
+		if !isWhite{
+			step = -1
+		}
+		// check further ranks from curr rank
+		for r:=row+step; r>=0 && r<8; r++{
+			frontSpan |= uint64(1)<<uint64(r*8+col) 
+			if col>0 {
+				frontSpan |= uint64(1)<<uint64(r*8+col-1)
+			}
+			if col<70 {
+				frontSpan |= uint64(1)<<uint64(r*8+col+1)
+			}
+		}
+		// & with enemyPawns and frontSpan
+		if (enemyPawns & frontSpan) == 0{
+			// it is a passed pawn so give bonus
+			relRow := row
+			if !isWhite{
+				relRow = 7-row
+			}
+			mg += passedPawnBonusMG[relRow]
+			eg += passedPawnBonusEG[relRow]
+		}
+		// decrese by 1
+		pawns &= pawns-1
 	}
 	return mg, eg
 }

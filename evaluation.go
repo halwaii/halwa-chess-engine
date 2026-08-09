@@ -202,6 +202,7 @@ func Evaluate(b *board) int{
 	egScore += pawnEG
 	mgScore += evalKingSafety(b)
 	mgScore += evalDevelopment(b)
+	mgScore += evalCastling(b)
 
 	// add eval mop up according to end game
 	// check who is winning

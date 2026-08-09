@@ -24,19 +24,19 @@ func mobility(b *board, isWhite bool) int {
 	score := 0
 
 	for n := knight; n != 0; n &= n-1 {
-		square := bits.TrailingZeros64(knight)
+		square := bits.TrailingZeros64(n)
 		score += bits.OnesCount64(LegalKnightmoves(bitboard, square, isWhite)) * knightMobility
 	}
 	for n := bishop; n != 0; n &= n-1 {
-		square := bits.TrailingZeros64(bishop)
+		square := bits.TrailingZeros64(n)
 		score += bits.OnesCount64(LegalBishopmoves(bitboard, square, isWhite)) * bishopMobility
 	}
 	for n := rook; n != 0; n &= n-1 {
-		square := bits.TrailingZeros64(rook)
+		square := bits.TrailingZeros64(n)
 		score += bits.OnesCount64(LegalRookmoves(bitboard, square, isWhite)) * rookMobility
 	}
 	for n := queen; n != 0; n &= n-1 {
-		square := bits.TrailingZeros64(queen)
+		square := bits.TrailingZeros64(n)
 		moves := LegalBishopmoves(bitboard, square, isWhite) | LegalRookmoves(bitboard, square, isWhite)
 		score += bits.OnesCount64(moves) * queenMobility
 	}

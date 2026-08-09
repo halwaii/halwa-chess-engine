@@ -32,8 +32,8 @@ var PawnMiddlegamePST = [64]int{
 	0,0,0,0,0,0,0,0, // pawns dont exist here
 	60,60,60,60,60,60,60,60, // rank 7 most valuable due to promotion
 	10,10,20,30,30,20,10,10,
-	5,5,10,25,25,10,5,5,
-	0,0,0,20,20,0,0,0,
+	5,5,10,45,45,10,5,5,
+	0,0,0,40,40,0,0,0,
 	5,-5,-10,0,0,-10,-5,5,
 	5,10,10,-20,-20,10,10,5,
 	0,0,0,0,0,0,0,0,
@@ -201,6 +201,7 @@ func Evaluate(b *board) int{
 	mgScore += pawnMG
 	egScore += pawnEG
 	mgScore += evalKingSafety(b)
+	mgScore += evalDevelopment(b)
 
 	// add eval mop up according to end game
 	// check who is winning
@@ -209,7 +210,7 @@ func Evaluate(b *board) int{
 	} else if egScore < -100{
 		egScore -= evalMopUp(b, false)
 	}
-	
+
 	phase := GamePhase(b)
 	blended := (mgScore*(24-phase) + egScore*phase) / 24
 

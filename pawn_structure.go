@@ -76,11 +76,11 @@ func evalPawn(ownPawns uint64, enemyPawns uint64, isWhite bool) (int, int) {
 		// all connected pawns are supported but all supported ar not connected
 		if !isolated{
 			if col>0 && (ownPawns & (uint64(1)<<uint64(row*8 + col-1))) !=0{
-				mg += supportedPawnMG
-				eg += supportedPawnEG
+				mg += connectedPawnMG
+				eg += connectedPawnEG
 			} else if col>0 && (ownPawns & (uint64(1)<<uint64(row*8 + col+1))) !=0{
-				mg += supportedPawnMG
-				eg += supportedPawnEG
+				mg += connectedPawnMG
+				eg += connectedPawnEG
 			}
 		}
 		// passed pawn

@@ -92,12 +92,12 @@ func evalPawn(ownPawns uint64, enemyPawns uint64, isWhite bool) (int, int) {
 			step = -1
 		}
 		// check further ranks from curr rank
-		for r:=row+step; r>=0 && r<8; r++{
+		for r:=row+step; r>=0 && r<8; r += step {
 			frontSpan |= uint64(1)<<uint64(r*8+col) 
 			if col>0 {
 				frontSpan |= uint64(1)<<uint64(r*8+col-1)
 			}
-			if col<70 {
+			if col<7 {
 				frontSpan |= uint64(1)<<uint64(r*8+col+1)
 			}
 		}

@@ -1,5 +1,7 @@
 package main
 
+import "math/bits"
+
 // we measure this score in Centipawns
 // cp = more +ve -> white is winning
 // cp = more -ve -> black is winning
@@ -26,7 +28,7 @@ const(
 // so we define a PST array for each piece
 
 // pawns have high values on high rank
-var PawnPST = [64]int{
+var PawnMiddlegamePST = [64]int{
 	0,0,0,0,0,0,0,0, // pawns dont exist here
 	60,60,60,60,60,60,60,60, // rank 7 most valuable due to promotion
 	10,10,20,30,30,20,10,10,
@@ -35,6 +37,17 @@ var PawnPST = [64]int{
 	5,-5,-10,0,0,-10,-5,5,
 	5,10,10,-20,-20,10,10,5,
 	0,0,0,0,0,0,0,0,
+}
+// pst for end game
+var PawnEndgamePST = [64]int{
+	0,  0,  0,  0,  0,  0,  0,  0,
+	 80, 80, 80, 80, 80, 80, 80, 80, // promotion
+	 50, 50, 50, 50, 50, 50, 50, 50, 
+	 30, 30, 30, 30, 30, 30, 30, 30, 
+	 20, 20, 20, 20, 20, 20, 20, 20,
+	 10, 10, 10, 10, 10, 10, 10, 10,
+	 10, 10, 10, 10, 10, 10, 10, 10,
+	  0,  0,  0,  0,  0,  0,  0,  0,
 }
 
 // knights have high values in center and low on corner/edges
@@ -86,7 +99,7 @@ var QueenPST = [64]int{
 }
 
 // king wants to hide in corners (midgame) behind pawns
-var KingPST = [64]int{
+var KingMiddlegamePST = [64]int{
 	-30,-40,-40,-50,-50,-40,-40,-30,
 	-30,-40,-40,-50,-50,-40,-40,-30,
 	-30,-40,-40,-50,-50,-40,-40,-30,
@@ -96,9 +109,44 @@ var KingPST = [64]int{
 	 20, 20,  0,  0,  0,  0, 20, 20,
 	 20, 30, 10,  0,  0, 10, 30, 20,
 }
+
+// king is stronger in middle during endgames
+var KingEndgamePST = [64]int{
+	-50,-30,-30,-30,-30,-30,-30,-50,
+	-30,-20,  0,  0,  0,  0,-20,-30,
+	-30,  0, 20, 30, 30, 20,  0,-30,
+	-30,  0, 30, 40, 40, 30,  0,-30,
+	-30,  0, 30, 40, 40, 30,  0,-30,
+	-30,  0, 20, 30, 30, 20,  0,-30,
+	-30,-20,  0,  0,  0,  0,-20,-30,
+	-50,-30,-30,-30,-30,-30,-30,-50,
+}
+
+// game phase constants
+const (
+	knightPhase = 1
+	bishopPhase = 1
+	rookPhase = 2
+	queenPhase = 4
+	// 4 knights, 4 bishops, 4 rooks, 2 queens
+	totalphase = 24
+)
+// tells engine if the game is in middle game or endgame
+func GamePhase(b *board) int{
+	phase := totalphase
+	phase -= bits.OnesCount64(b.WhiteKnight | b.BlackKnight) * knightPhase
+	phase -= bits.OnesCount64(b.WhiteBishop | b.BlackBishop) * bishopPhase
+	phase -= bits.OnesCount64(b.WhiteRook | b.BlackRook) * rookPhase
+	phase -= bits.OnesCount64(b.WhiteQueen | b.BlackQueen) * queenPhase
+
+	if phase<0{
+		phase = 0
+	}
+	return  phase
+}
 // this funciton tells engine whose favour is in curr board
 func Evaluate(b *board) int{
-	score := 0
+	mgScore, egScore := 0, 0
 
 	// loop on all squares
 	for i:=0;i<64;i++{
@@ -108,46 +156,66 @@ func Evaluate(b *board) int{
 			// add for white
 			switch piece{
 			case Whitepawn: 
-				score += PawnVal
-				score += PawnPST[i]
+				mgScore += PawnVal + PawnMiddlegamePST[i]
+				egScore += PawnVal + PawnEndgamePST[i]
 			case WhiteKnight: 
-				score += KnightVal
-				score += KnightPSt[i]
+				mgScore += KnightVal + KnightPSt[i]
+				egScore += KnightVal + KnightPSt[i]
 			case WhiteBishop: 
-				score += BishopVal
-				score += BishopPST[i]
+				mgScore += BishopVal + BishopPST[i]
+				egScore += BishopVal + BishopPST[i]
 			case WhiteRook: 
-				score += RookVal
-				score += RookPST[i]
+				mgScore += RookVal + RookPST[i]
+				egScore += RookVal + RookPST[i]
 			case WhiteQueen: 
-				score += QueenVal
-				score += QueenPST[i]
+				mgScore += QueenVal + QueenPST[i]
+				egScore += QueenVal + QueenPST[i]
 			case WhiteKing: 
-				score += KingVal
-				score += KingPST[i]
+				mgScore += KingVal + KingMiddlegamePST[i]
+				egScore += KingVal + KingEndgamePST[i]
 
 			// subtract for black
 			case BlackPawn: 
-				score -= PawnVal
-				score -= PawnPST[mirrorsquare(i)]
+				mgScore -= PawnVal + PawnMiddlegamePST[mirrorsquare(i)]
+				egScore -= PawnVal + PawnEndgamePST[mirrorsquare(i)]
 			case BlackKnight: 
-				score -= KnightVal
-				score -= KnightPSt[mirrorsquare(i)]
+				mgScore -= KnightVal + KnightPSt[mirrorsquare(i)]
+				egScore -= KnightVal + KnightPSt[mirrorsquare(i)]
 			case BlackBishop: 
-				score -= BishopVal
-				score -= BishopPST[mirrorsquare(i)]
+				mgScore -= BishopVal + BishopPST[mirrorsquare(i)]
+				egScore -= BishopVal + BishopPST[mirrorsquare(i)]
 			case BlackRook: 
-				score -= RookVal
-				score -= RookPST[mirrorsquare(i)]
+				mgScore -= RookVal + RookPST[mirrorsquare(i)]
+				egScore -= RookVal + RookPST[mirrorsquare(i)]
 			case BlackQueen: 
-				score -= QueenVal
-				score -= QueenPST[mirrorsquare(i)]
+				mgScore -= QueenVal + QueenPST[mirrorsquare(i)]
+				egScore -= QueenVal + QueenPST[mirrorsquare(i)]
 			case BlackKing: 
-				score -= KingVal
-				score -= KingPST[mirrorsquare(i)]
+				mgScore -= KingVal + KingMiddlegamePST[mirrorsquare(i)]
+				egScore -= KingVal + KingEndgamePST[mirrorsquare(i)]
 			}
 		}
 	}
+
+	pawnMG, pawnEG := EvaluatePawnStructure(b)
+	mgScore += pawnMG
+	egScore += pawnEG
+	mgScore += evalKingSafety(b)
+
+	// add eval mop up according to end game
+	// check who is winning
+	if egScore > 100 {
+		egScore += evalMopUp(b, true)
+	} else if egScore < -100{
+		egScore -= evalMopUp(b, false)
+	}
+	
+	phase := GamePhase(b)
+	blended := (mgScore*(24-phase) + egScore*phase) / 24
+
+	mobilityScore := evalMobility(b)
+	
+	score := blended + mobilityScore 
 	// return score according to curr player perspective
 	if b.WhiteToMove{
 		return score

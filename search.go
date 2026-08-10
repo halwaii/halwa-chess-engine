@@ -5,15 +5,15 @@ import (
 )
 
 // maximum and minimum score
-const(
-	infinity = 50000
+const (
+	infinity    = 50000
 	neginfinity = -50000
 )
 
 // alpha beta search function (negamax)
 // alpha -> my best case
 // beta -> opponents best case
-func Search(b *board, depth int, alpha int, beta int) int{
+func Search(b *board, depth int, ply int, alpha int, beta int) int {
 
 	// alpha keeps changing, so we store it in TT
 	// 1) store original alpha to decide flag in TT
@@ -22,26 +22,26 @@ func Search(b *board, depth int, alpha int, beta int) int{
 	// 1* create variable of to hash beste move
 	var hashMove Move
 	// 2) TT read
-	if entry, found := TranspositionTable[b.HashKey];found{
+	if entry, found := TranspositionTable[b.HashKey]; found {
 
 		// 2* save old best move from cache
 		hashMove = entry.BestMove
 
-		// use cache only when old depth is bigger than curr 
-		if entry.Depth >= depth{
-			if entry.Flag == Exactflag{
+		// use cache only when old depth is bigger than curr
+		if entry.Depth >= depth {
+			if entry.Flag == Exactflag {
 				return entry.Score // return exact score
 			}
-			if entry.Flag == Alphaflag && entry.Score <= alpha{
+			if entry.Flag == Alphaflag && entry.Score <= alpha {
 				return alpha // upper bound prune
 			}
-			if entry.Flag == Betaflag && entry.Score >= beta{
+			if entry.Flag == Betaflag && entry.Score >= beta {
 				return beta // lower bound prune
 			}
 		}
 	}
 	// if depth = 0 then evaluate the score of current board
-	if depth == 0{
+	if depth == 0 {
 		return QuiescenceSearch(b, alpha, beta)
 	}
 	// maximum starts from negative infinity
@@ -53,33 +53,44 @@ func Search(b *board, depth int, alpha int, beta int) int{
 
 	// move ordering should be before doing dfs
 	// creating a new slice to store moves and its score
-	type ScoredMove struct{
-		move Move
+	type ScoredMove struct {
+		move  Move
 		score int
 	}
 	// allocating memory and calculating scores
 	// we use "make" for it
 	scoredMoves := make([]ScoredMove, len(list.Moves))
-	for i:=0;i<len(list.Moves);i++{
-
+	for i := 0; i < len(list.Moves); i++ {
+		move := list.Moves[i]
 		// normal evaluation
-		moveScore := ScoreMoves(b, list.Moves[i])
+		moveScore := ScoreMoves(b, move)
 
 		// if this move was caches best move , then give it godly score
-		if list.Moves[i] == hashMove{
-			// so that it becomes top move when sorted 
+		if move == hashMove {
+			// so that it becomes top move when sorted
 			// and alpha beta pruning will do its work
 			moveScore = 10000000
+		} else if !isCapture(move) && !isPromotion(move) {
+			// killer history is applied only on quiet moves
+			if move == killerMoves[ply][0] {
+				moveScore = 900000 // 1st killer move gets highest score
+			} else if move == killerMoves[ply][1] {
+				moveScore = 800000 // 2nd killer move
+			} else {
+				// history score
+				piece := GetPieceAt(b, int(GetFrom(move)))
+				moveScore += historyTable[piece][GetTo(move)]
+			}
 		}
 		scoredMoves[i] = ScoredMove{
-			move: list.Moves[i],
+			move:  list.Moves[i],
 			score: moveScore,
 		}
 	}
 
 	// sort the slice in descending order
-	sort.Slice(scoredMoves, func(i,j int)bool{
-		return scoredMoves[i].score>scoredMoves[j].score
+	sort.Slice(scoredMoves, func(i, j int) bool {
+		return scoredMoves[i].score > scoredMoves[j].score
 	})
 
 	// count legal moves
@@ -90,7 +101,7 @@ func Search(b *board, depth int, alpha int, beta int) int{
 	var currBestMove Move
 
 	// loop through all moves
-	for i:=0;i<len(list.Moves);i++{
+	for i := 0; i < len(list.Moves); i++ {
 		move := scoredMoves[i].move // update here
 		// make move
 		MakeMove(b, move)
@@ -98,7 +109,7 @@ func Search(b *board, depth int, alpha int, beta int) int{
 		// check for legality
 		// if after the move the king is in check or not
 		// if yes then continue
-		if isinCheck(*b, !b.WhiteToMove){
+		if isinCheck(*b, !b.WhiteToMove) {
 			// if yes them immediate unmakemove
 			UnMakeMove(b)
 			continue
@@ -107,49 +118,56 @@ func Search(b *board, depth int, alpha int, beta int) int{
 		// recurse with NEGAmax
 		// negamax : depth--, flip alpha beta and negate too, and negate score
 		// max(a, b) = -min(-a, -b)
-		score := -Search(b, depth-1, -beta, -alpha)
+		score := -Search(b, depth-1, ply+1, -beta, -alpha)
 
 		// unmake move
 		UnMakeMove(b)
 
 		// update the new score if it is better than last
-		if score > bestscore{
+		if score > bestscore {
 			bestscore = score
 			currBestMove = move
 		}
 
 		// update alpha
 		// alpha acts like max in minimax
-		if score > alpha{
+		if score > alpha {
 			alpha = score
 		}
 
 		// alpha beta pruning
 		// score is already max so no need to check further
-		if alpha >= beta{
-			break // 
+		if alpha >= beta {
+			// if move is not capture then put it in killer and history
+			if !isCapture(move) && !isPromotion(move) {
+				StoreKiller(move, ply)
+
+				piece := GetPieceAt(b, int(GetFrom(move)))
+				storeHistory(piece, int(GetTo(move)), depth)
+			}
+			break //
 		}
 	}
 	// logic for checkmate and stalemate
-	if LegalMovesCount==0{
+	if LegalMovesCount == 0 {
 		// if there is no legal moves and king is in check -> CHECKMATE
-		if isinCheck(*b, b.WhiteToMove){
-			return neginfinity - (100-depth) // to find mate faster
+		if isinCheck(*b, b.WhiteToMove) {
+			return neginfinity - (100 - depth) // to find mate faster
 		}
 		// if not in check but there are no legal moves -> STALEMATE
-		return  0
+		return 0
 	}
 	// 3) TT write
 	flag := Exactflag // let exact flag be default
-	if bestscore<= ogAlpha{
-		flag = Alphaflag 
-	} else if bestscore >= beta{
+	if bestscore <= ogAlpha {
+		flag = Alphaflag
+	} else if bestscore >= beta {
 		flag = Betaflag
 	}
 	TranspositionTable[b.HashKey] = TTEntry{
-		Depth: depth,
-		Score: bestscore,
-		Flag: flag,
+		Depth:    depth,
+		Score:    bestscore,
+		Flag:     flag,
 		BestMove: currBestMove,
 	}
 	return bestscore

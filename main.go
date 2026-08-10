@@ -135,8 +135,8 @@ func UCILoop(){
 		case "go":
 			// iterative deepeing
 			var bestScore int
-			for d:=1;d<=6;d++{
-				bestScore = Search(&b, d, -50000, 50000)
+			for d:=1;d<=7;d++{
+				bestScore = Search(&b, d, 0, -50000, 50000)
 				fmt.Printf("info depth %d score cp %d\n", d, bestScore)
 			}
 			// how to find best move ?

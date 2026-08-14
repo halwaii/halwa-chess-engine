@@ -155,7 +155,9 @@ func UCILoop(){
 	}
 }
 func main(){
-	UCILoop()
+	// UCILoop()
+	StartWebServer()
+
 	// var myMove Move = EncodeMove(12, 28, 0)
 	// fmt.Println("pawn moves from e2(12) to e4(28) : \n")
 	// fmt.Println("Encoded Move Value (Integer):", myMove)
